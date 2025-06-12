@@ -1,0 +1,2190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nebula: An Image Editor</title>
+    <!-- Favicon (Emoji SVG) -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✨</text></svg>">
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font and Great Vibes for Calligraphy -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Great+Vibes&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Ensure body fills the entire viewport */
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden; /* Prevent scrolling */
+            display: flex; /* Make body a flex container */
+            align-items: center; /* Center app-container vertically */
+            justify-content: center; /* Center app-container horizontally */
+            padding: 1rem; /* Add padding to the body for app-container */
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        /* Default Dark Mode Styles - Deeper and more vibrant */
+        body {
+            background-color: #0f172a; /* slate-900 */
+            background-image: linear-gradient(to bottom right, #1e293b, #0f172a); /* from-slate-800 to-slate-900 */
+            color: #e2e8f0; /* slate-200 */
+        }
+
+            body.light {
+                background-color: #f7fafc; /* Equivalent to gray-50 */
+                background-image: linear-gradient(to bottom right, #f7fafc, #edf2f7); /* from-gray-50 to-gray-100 */
+                color: #2d3748; /* Equivalent to gray-800 */
+            }
+
+        #app-container {
+            width: 100%;
+            height: 100%;
+            max-width: 1280px; /* Optional: Limit max width for larger screens */
+            max-height: 900px; /* Optional: Limit max height for larger screens */
+            box-sizing: border-box; /* Include padding in element's total width and height */
+            transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        /* App Container Dark Mode - More distinct from body */
+        #app-container {
+            background-color: rgba(30, 41, 59, 0.9); /* slate-800 with opacity */
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.2); /* Stronger shadow */
+            border: 1px solid rgba(71, 85, 105, 0.5); /* slate-600 border */
+        }
+        /* App Container Light Mode */
+        body.light #app-container {
+            background-color: rgba(255, 255, 255, 0.9); /* white with opacity */
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); /* Adjusted shadow for light mode */
+            border: 1px solid rgba(203, 213, 224, 0.7); /* gray-300 border */
+        }
+
+        /* Calligraphy Font */
+        .font-great-vibes {
+            font-family: 'Great Vibes', cursive;
+        }
+
+        /* Header Strip Styling */
+        #header-strip {
+            background-color: rgba(49, 46, 129, 0.2); /* indigo-900 with 20% opacity */
+            border-bottom: 1px solid rgba(71, 85, 105, 0.3); /* subtle border */
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); /* subtle shadow */
+        }
+
+            #header-strip h1 {
+                color: #f1f5f9; /* slate-100 */
+            }
+
+        body.light #header-strip {
+            background-color: rgba(226, 232, 240, 0.2); /* gray-200 with 20% opacity for light mode */
+            border-bottom: 1px solid rgba(175, 185, 195, 0.5); /* lighter border */
+        }
+
+            body.light #header-strip h1 {
+                color: #2d3748; /* gray-800 for good contrast on lighter background */
+            }
+
+
+        #imageCanvas {
+            max-width: 100%;
+            max-height: 100%;
+            display: block;
+            margin: auto;
+            border-radius: 0.75rem; /* rounded-lg */
+            background-color: #2d3748; /* gray-800 */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.15); /* Soft shadow */
+        }
+
+        body.light #imageCanvas {
+            background-color: #e2e8f0; /* gray-200 */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        #placeholderText {
+            color: #cbd5e0; /* gray-300 */
+        }
+
+        body.light #placeholderText {
+            color: #2d3748; /* gray-800 for better contrast */
+        }
+
+        /* Control Panel Styles - More distinct background */
+        #controls-panel {
+            transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+            background-color: rgba(30, 41, 59, 0.6); /* Deeper slate-800 with opacity */
+            border: 1px solid rgba(71, 85, 105, 0.5); /* slate-600 border */
+        }
+        /* Control Panel Light Mode */
+        body.light #controls-panel {
+            background-color: rgba(243, 244, 246, 0.5); /* gray-100 with opacity */
+            border: 1px solid rgba(203, 213, 224, 0.7); /* Adjusted border for clarity */
+        }
+
+            /* Control Panel Text Colors for Light Mode */
+            body.light #controls-panel h2,
+            body.light #controls-panel h3,
+            body.light #controls-panel label {
+                color: #2d3748; /* gray-800 for high contrast */
+            }
+
+            body.light #controls-panel p { /* For the small note text */
+                color: #4a5568; /* gray-700 for good contrast */
+            }
+            /* For slider values that were text-purple-400/indigo-400 */
+            body.light #controls-panel .font-bold.text-purple-400 {
+                color: #805ad5; /* purple-600 */
+            }
+
+            body.light #controls-panel .font-bold.text-indigo-400 {
+                color: #6366f1; /* indigo-600 */
+            }
+
+        /* Input file styles (dark mode default) - More defined */
+        input[type="file"] {
+            background-color: rgba(71, 85, 105, 0.2); /* slate-600 with opacity */
+            border-color: #64748b; /* slate-500 */
+            color: #e2e8f0; /* slate-200 */
+            padding: 0.5rem 0.75rem; /* py-2 px-3 */
+            border-radius: 0.5rem; /* rounded-md */
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.2); /* Inner shadow */
+        }
+
+            input[type="file"]::file-selector-button {
+                background-color: #8b5cf6; /* violet-500 */
+                color: #ffffff; /* white */
+                padding: 0.5rem 1rem; /* py-2 px-4 */
+                border-radius: 0.375rem; /* rounded-md */
+                border: 0;
+                font-size: 0.875rem; /* text-sm */
+                font-weight: 600; /* font-semibold */
+                margin-right: 1rem; /* mr-4 */
+                transition: background-color 0.2s ease;
+            }
+
+                input[type="file"]::file-selector-button:hover {
+                    background-color: #7c3aed; /* violet-600 */
+                }
+        /* Input file styles (light mode) */
+        body.light input[type="file"] {
+            background-color: rgba(255, 255, 255, 0.7); /* white with opacity */
+            border-color: #cbd5e0; /* gray-300 */
+            color: #4a5568; /* gray-700 */
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+            body.light input[type="file"]::file-selector-button {
+                background-color: #805ad5; /* purple-600 for light mode button */
+                color: #ffffff; /* white */
+            }
+
+                body.light input[type="file"]::file-selector-button:hover {
+                    background-color: #9f7aea; /* purple-500 for light mode button hover */
+                }
+
+
+        /* Input number styles (dark mode default) - More defined */
+        input[type="number"] {
+            background-color: rgba(71, 85, 105, 0.2); /* slate-600 with opacity */
+            border-color: #64748b; /* slate-500 */
+            color: #e2e8f0; /* slate-200 */
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.5rem;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
+        }
+        /* Input number styles (light mode) */
+        body.light input[type="number"] {
+            background-color: rgba(255, 255, 255, 0.7); /* white with opacity */
+            border-color: #cbd5e0; /* gray-300 */
+            color: #4a5568; /* gray-700 */
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        /* Select styles (dark mode default) - More defined */
+        select {
+            background-color: #4a5568; /* gray-700, more opaque for better contrast */
+            border-color: #6b7280; /* gray-500 */
+            color: #e2e8f0; /* gray-200 */
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.5rem;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
+        }
+        /* Select styles (light mode) */
+        body.light select {
+            background-color: rgba(255, 255, 255, 0.7); /* white with opacity */
+            border-color: #cbd5e0; /* gray-300 */
+            color: #4a5568; /* gray-700 */
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+
+        /* Slider track (range-lg) styles - More vibrant and distinct */
+        input[type="range"]::-webkit-slider-runnable-track {
+            background: #64748b; /* slate-500 */
+            height: 6px; /* slightly thicker */
+            border-radius: 3px;
+        }
+
+        input[type="range"]::-moz-range-track {
+            background: #64748b; /* slate-500 */
+            height: 6px;
+            border-radius: 3px;
+        }
+
+        body.light input[type="range"]::-webkit-slider-runnable-track {
+            background: #cbd5e0; /* gray-300 */
+        }
+
+        body.light input[type="range"]::-moz-range-track {
+            background: #cbd5e0; /* gray-300 */
+        }
+
+        /* Sliders thumb styles - More pronounced and rounded */
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px; /* Larger thumb */
+            height: 16px; /* Larger thumb */
+            background: #8b5cf6; /* violet-500 */
+            border-radius: 50%; /* Fully round */
+            cursor: grab;
+            margin-top: -5px; /* Adjust to center vertically */
+            box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.4); /* Glow effect */
+            transition: background-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: #8b5cf6; /* violet-500 */
+            border-radius: 50%;
+            cursor: grab;
+            box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.4);
+            transition: background-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+            input[type="range"]::-webkit-slider-thumb:active,
+            input[type="range"]::-moz-range-thumb:active {
+                cursor: grabbing;
+                box-shadow: 0 0 0 6px rgba(139, 92, 246, 0.6); /* More pronounced glow on active */
+            }
+
+        body.light input[type="range"]::-webkit-slider-thumb {
+            background: #805ad5; /* purple-600 */
+            box-shadow: 0 0 0 4px rgba(128, 90, 213, 0.4);
+        }
+
+        body.light input[type="range"]::-moz-range-thumb {
+            background: #805ad5; /* purple-600 */
+            box-shadow: 0 0 0 4px rgba(128, 90, 213, 0.4);
+        }
+
+            body.light input[type="range"]::-webkit-slider-thumb:active,
+            body.light input[type="range"]::-moz-range-thumb:active {
+                box-shadow: 0 0 0 6px rgba(128, 90, 213, 0.6);
+            }
+
+
+        /* Checkbox color adjustment - More defined */
+        input[type="checkbox"].form-checkbox,
+        input[type="radio"].form-radio {
+            color: #8b5cf6; /* violet-500 */
+            border-color: #64748b; /* slate-500 */
+            background-color: rgba(71, 85, 105, 0.2); /* slate-600 opaque */
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+        }
+
+            input[type="checkbox"].form-checkbox:checked,
+            input[type="radio"].form-radio:checked {
+                background-color: #8b5cf6; /* violet-500 */
+                border-color: #8b5cf6; /* violet-500 */
+            }
+
+            input[type="checkbox"].form-checkbox.text-indigo-400,
+            input[type="radio"].form-radio.text-indigo-400 {
+                color: #6366f1; /* indigo-500 */
+            }
+
+                input[type="checkbox"].form-checkbox.text-indigo-400:checked,
+                input[type="radio"].form-radio.text-indigo-400:checked {
+                    background-color: #6366f1; /* indigo-500 */
+                    border-color: #6366f1;
+                }
+
+        body.light input[type="checkbox"].form-checkbox,
+        body.light input[type="radio"].form-radio {
+            color: #805ad5; /* purple-600 in light mode */
+            border-color: #a0aec0; /* gray-400 */
+            background-color: rgba(255,255,255,0.7);
+        }
+
+            body.light input[type="checkbox"].form-checkbox:checked,
+            body.light input[type="radio"].form-radio:checked {
+                background-color: #805ad5; /* purple-600 */
+                border-color: #805ad5;
+            }
+
+            body.light input[type="checkbox"].form-checkbox.text-indigo-400,
+            body.light input[type="radio"].form-radio.text-indigo-400 {
+                color: #6366f1; /* indigo-600 in light mode */
+            }
+
+                body.light input[type="checkbox"].form-checkbox.text-indigo-400:checked,
+                body.light input[type="radio"].form-radio.text-indigo-400:checked {
+                    background-color: #6366f1; /* indigo-600 */
+                    border-color: #6366f1;
+                }
+
+
+        /* Button styles (Dark mode default) - More vibrant and consistent */
+        button {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, transform 0.1s ease;
+            color: #e2e8f0; /* Default text color for buttons */
+            padding: 0.75rem 1rem; /* py-3 px-4 */
+            border-radius: 0.625rem; /* rounded-xl for slightly more rounded look */
+            font-weight: 600; /* font-semibold */
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2), 0 2px 4px -1px rgba(0,0,0,0.1);
+            border: 1px solid transparent; /* Default transparent border */
+        }
+
+            button:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 6px 10px -1px rgba(0,0,0,0.3), 0 4px 6px -2px rgba(0,0,0,0.15);
+            }
+
+            button:active {
+                transform: translateY(0);
+                box-shadow: 0 2px 4px -1px rgba(0,0,0,0.2), 0 1px 2px -1px rgba(0,0,0,0.1);
+            }
+
+        /* Purple filter buttons */
+        #grayscaleButton, #invertButton, #sepiaButton, #glowButton {
+            background-color: #7e22ce; /* violet-700 */
+            background-image: linear-gradient(to right, #8b5cf6, #a78bfa); /* from-violet-500 to-purple-400 */
+            color: #ffffff; /* white */
+            border-color: #8b5cf6;
+        }
+
+            #grayscaleButton:hover, #invertButton:hover, #sepiaButton:hover, #glowButton:hover {
+                background-image: linear-gradient(to right, #7c3aed, #9333ea); /* violet-600 to purple-600 */
+                border-color: #7c3aed;
+            }
+            /* Active state for filter buttons */
+            #grayscaleButton.active, #invertButton.active, #sepiaButton.active, #glowButton.active {
+                background-image: linear-gradient(to right, #a78bfa, #c4b5fd); /* Light purple gradient */
+                color: #4c1d95; /* Dark violet text */
+                border-color: #a78bfa;
+                box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); /* Inner shadow for pressed effect */
+                transform: none;
+            }
+
+        /* Blue transformation buttons */
+        #flipHorizontalButton, #flipVerticalButton, #rotate90Button, #cropSquareButton, #applyResizeButton {
+            background-color: #3b82f6; /* blue-500 */
+            background-image: linear-gradient(to right, #3b82f6, #60a5fa); /* from-blue-500 to-blue-400 */
+            color: #ffffff;
+            border-color: #3b82f6;
+        }
+
+            #flipHorizontalButton:hover, #flipVerticalButton:hover, #rotate90Button:hover, #cropSquareButton:hover, #applyResizeButton:hover {
+                background-image: linear-gradient(to right, #2563eb, #3b82f6); /* blue-600 to blue-500 */
+                border-color: #2563eb;
+            }
+
+        /* Reset button (Gray) */
+        #resetButton {
+            background-color: #475569; /* slate-700 */
+            background-image: linear-gradient(to right, #475569, #64748b); /* from-slate-700 to-slate-500 */
+            color: #ffffff;
+            border-color: #475569;
+        }
+
+            #resetButton:hover {
+                background-image: linear-gradient(to right, #334155, #475569); /* slate-800 to slate-700 */
+                border-color: #334155;
+            }
+
+        /* Download button (Green) */
+        #downloadButton {
+            background-color: #10b981; /* emerald-500 */
+            background-image: linear-gradient(to right, #10b981, #34d399); /* from-emerald-500 to-emerald-400 */
+            color: #ffffff;
+            border-color: #10b981;
+        }
+
+            #downloadButton:hover {
+                background-image: linear-gradient(to right, #059669, #10b981); /* emerald-600 to emerald-500 */
+                border-color: #059669;
+            }
+
+
+        /* Light Mode Button Overrides */
+        body.light button {
+            color: #4a5568; /* Darker text for light mode buttons */
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+        }
+
+            body.light button:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 6px 10px -1px rgba(0,0,0,0.15), 0 4px 6px -2px rgba(0,0,0,0.08);
+            }
+
+            body.light button:active {
+                transform: translateY(0);
+                box-shadow: 0 2px 4px -1px rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.05);
+            }
+
+        body.light #grayscaleButton, body.light #invertButton, body.light #sepiaButton, body.light #glowButton {
+            background-color: #f3e8ff; /* violet-50 */
+            background-image: none; /* remove gradient for light mode */
+            color: #8b5cf6; /* violet-500 */
+            border-color: #a78bfa; /* purple-400 */
+        }
+
+            body.light #grayscaleButton:hover, body.light #invertButton:hover, body.light #sepiaButton:hover, body.light #glowButton:hover {
+                background-color: #ede9fe; /* violet-100 */
+            }
+
+            body.light #grayscaleButton.active, body.light #invertButton.active, body.light #sepiaButton.active, body.light #glowButton.active {
+                background-color: #8b5cf6; /* violet-500 */
+                color: #ffffff;
+                border-color: #8b5cf6;
+                box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);
+            }
+
+        body.light #flipHorizontalButton, body.light #flipVerticalButton, body.light #rotate90Button, body.light #cropSquareButton, body.light #applyResizeButton {
+            background-color: #eff6ff; /* blue-50 */
+            background-image: none;
+            color: #3b82f6; /* blue-500 */
+            border-color: #60a5fa; /* blue-400 */
+        }
+
+            body.light #flipHorizontalButton:hover, body.light #flipVerticalButton:hover, body.light #rotate90Button:hover, body.light #cropSquareButton:hover, body.light #applyResizeButton:hover {
+                background-color: #dbeafe; /* blue-100 */
+            }
+
+        body.light #resetButton {
+            background-color: #e2e8f0; /* gray-200 */
+            background-image: none;
+            color: #475569; /* slate-700 */
+            border-color: #cbd5e0; /* gray-300 */
+        }
+
+            body.light #resetButton:hover {
+                background-color: #d1d9e2; /* gray-300 */
+            }
+
+        body.light #downloadButton {
+            background-color: #ecfdf5; /* emerald-50 */
+            background-image: none;
+            color: #10b981; /* emerald-500 */
+            border-color: #34d399; /* emerald-400 */
+        }
+
+            body.light #downloadButton:hover {
+                background-color: #d1fae5; /* emerald-100 */
+            }
+
+
+        /* Info Button & Mode Toggle - More consistent styling */
+        #infoButton, #darkModeToggle {
+            background-color: rgba(71, 85, 105, 0.5); /* slate-600 opacity */
+            color: #cbd5e0; /* slate-200 */
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2), 0 2px 4px -1px rgba(0,0,0,0.1);
+            border: 1px solid rgba(100, 116, 139, 0.5); /* slate-500 border */
+            padding: 0.75rem; /* Larger touch target */
+        }
+
+            #infoButton:hover, #darkModeToggle:hover {
+                background-color: rgba(71, 85, 105, 0.7);
+                color: #f1f5f9; /* slate-100 */
+                transform: translateY(-1px);
+            }
+
+        body.light #infoButton, body.light #darkModeToggle {
+            background-color: rgba(255, 255, 255, 0.5); /* white bg-opacity-50 */
+            color: #475569; /* slate-700 */
+            border-color: rgba(203, 213, 224, 0.7); /* gray-300 border */
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+        }
+
+            body.light #infoButton:hover, body.light #darkModeToggle:hover {
+                background-color: rgba(255, 255, 255, 0.7); /* hover opacity */
+                color: #2d3748; /* gray-800 */
+            }
+
+        /* Adjusted positions for info and dark mode buttons */
+        #infoButton {
+            top: auto; /* Remove top positioning */
+            bottom: 1rem; /* Place at bottom */
+            right: 1rem; /* Place at right */
+        }
+
+        #darkModeToggle {
+            top: 1rem; /* Keep at top */
+            right: 1rem; /* Keep at right */
+        }
+
+
+        /* Info Modal */
+        #infoModal > div {
+            background-color: #1e293b; /* slate-800 */
+            border-color: #475569; /* slate-700 */
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        body.light #infoModal > div {
+            background-color: #ffffff; /* white */
+            border-color: #cbd5e0; /* gray-300 */
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        #infoModal h3 {
+            color: #f1f5f9; /* slate-100 */
+        }
+
+        body.light #infoModal h3 {
+            color: #2d3748; /* gray-800 */
+        }
+
+        #infoModal p {
+            color: #cbd5e0; /* slate-300 */
+        }
+
+        body.light #infoModal p {
+            color: #4a5568; /* gray-700 */
+        }
+
+        #closeInfoModal {
+            color: #94a3b8; /* slate-400 */
+        }
+
+        body.light #closeInfoModal {
+            color: #718096; /* gray-500 */
+        }
+
+        #closeInfoModal:hover {
+            color: #f1f5f9; /* slate-100 */
+        }
+
+        body.light #closeInfoModal:hover {
+            color: #2d3748; /* gray-700 */
+        }
+
+
+        /* New CSS class for the checkerboard background */
+        .checkerboard-bg {
+            background-image: linear-gradient(45deg, #444 25%, transparent 25%), linear-gradient(-45deg, #444 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #444 75%), linear-gradient(-45deg, transparent 75%, #444 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+        /* Light mode checkerboard */
+        body.light .checkerboard-bg {
+            background-image: linear-gradient(45deg, #bbb 25%, transparent 25%), linear-gradient(-45deg, #bbb 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #bbb 75%), linear-gradient(-45deg, transparent 75%, #bbb 75%);
+        }
+
+        /* Custom scrollbar for control panels */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(41, 41, 41, 0.2); /* Darker track */
+            border-radius: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(100, 100, 100, 0.5); /* Darker thumb */
+            border-radius: 4px;
+        }
+
+            .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                background: rgba(130, 130, 130, 0.7); /* Darker hover thumb */
+            }
+        /* Light mode scrollbar */
+        body.light .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(241, 241, 241, 0.2);
+        }
+
+        .light .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(160, 174, 192, 0.5); /* gray-500 with opacity */
+        }
+
+            .light .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                background: rgba(113, 128, 147, 0.7); /* gray-600 with opacity */
+            }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center p-4 text-gray-100">
+    <!-- Main Application Container -->
+    <div id="app-container" class="relative bg-gray-700 bg-opacity-90 rounded-xl shadow-2xl overflow-hidden flex flex-col w-full h-full">
+
+        <!-- Header Strip -->
+        <div id="header-strip" class="w-full py-4 bg-indigo-900 bg-opacity-20 rounded-t-xl flex items-center justify-center z-10">
+            <h1 class="text-3xl font-bold font-great-vibes text-white tracking-wide">Nebula ✨ A creativity tool</h1>
+        </div>
+
+        <!-- Main Content Area (Image Display + Controls) -->
+        <div class="flex-1 flex flex-col md:flex-row items-center justify-center p-4 gap-4 w-full h-full">
+
+            <!-- Left Panel: Image Display Area -->
+            <div class="relative w-full md:w-3/4 h-2/3 md:h-full flex items-center justify-center bg-gray-800 rounded-lg overflow-hidden shadow-xl">
+                <canvas id="imageCanvas" class="bg-gray-800"></canvas>
+                <p id="placeholderText" class="text-gray-200 text-center absolute z-0 text-2xl">Upload an image to start editing</p>
+
+                <!-- Loading Indicator -->
+                <div id="loading" class="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-70 text-white p-4 rounded-xl hidden z-40">
+                    <div class="bg-indigo-700 border-l-4 border-indigo-500 text-indigo-100 p-4 rounded-md shadow-sm" role="alert">
+                        <p class="font-bold" id="loadingMessage">Loading Segmentation Model...</p>
+                        <p id="loadingDetail">Please wait, this may take a moment.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Controls and Settings -->
+            <div id="controls-panel" class="w-full md:w-1/4 h-1/3 md:h-full bg-gray-600 bg-opacity-30 backdrop-blur-sm rounded-lg shadow-lg p-4 flex flex-col space-y-4 custom-scrollbar overflow-y-auto flex-shrink-0">
+                <!-- Upload Image -->
+                <div>
+                    <label for="imageUpload" class="block text-sm font-medium text-gray-200 mb-1">Upload Image:</label>
+                    <input type="file" id="imageUpload" accept="image/*" class="w-full text-gray-200 bg-gray-700 bg-opacity-20 backdrop-blur-sm border border-gray-500 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-400 focus:border-indigo-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-purple-700 file:text-white hover:file:bg-purple-600">
+                </div>
+
+                <!-- Global Adjustments Section Toggle -->
+                <div class="space-y-3">
+                    <h3 class="text-base font-semibold text-gray-100 pt-2 border-t border-gray-500">
+                        <label class="inline-flex items-center text-gray-100 cursor-pointer">
+                            <input type="checkbox" id="toggleGlobalAdjustments" class="form-checkbox text-purple-400 rounded">
+                            <span class="ml-2">Global Adjustments</span>
+                        </label>
+                    </h3>
+                    <div id="globalAdjustmentsControls" class="hidden space-y-3">
+                        <!-- Brightness Slider -->
+                        <div>
+                            <label for="brightness" class="block text-sm font-medium text-gray-200 mb-1">
+                                Brightness: <span id="brightnessValue" class="font-bold text-purple-400">100%</span>
+                            </label>
+                            <input type="range" id="brightness" min="0" max="200" step="1" value="100"
+                                   class="w-full h-2 bg-gray-500 rounded-lg appearance-none cursor-pointer range-lg">
+                        </div>
+
+                        <!-- Contrast Slider -->
+                        <div>
+                            <label for="contrast" class="block text-sm font-medium text-gray-200 mb-1">
+                                Contrast: <span id="contrastValue" class="font-bold text-purple-400">100%</span>
+                            </label>
+                            <input type="range" id="contrast" min="0" max="200" step="1" value="100"
+                                   class="w-full h-2 bg-gray-500 rounded-lg appearance-none cursor-pointer range-lg">
+                        </div>
+
+                        <!-- Saturation Slider -->
+                        <div>
+                            <label for="saturation" class="block text-sm font-medium text-gray-200 mb-1">
+                                Saturation: <span id="saturationValue" class="font-bold text-purple-400">100%</span>
+                            </label>
+                            <input type="range" id="saturation" min="0" max="200" step="1" value="100"
+                                   class="w-full h-2 bg-gray-500 rounded-lg appearance-none cursor-pointer range-lg">
+                        </div>
+
+                        <!-- Hue Rotation Slider -->
+                        <div>
+                            <label for="hue" class="block text-sm font-medium text-gray-200 mb-1">
+                                Hue: <span id="hueValue" class="font-bold text-purple-400">0°</span>
+                            </label>
+                            <input type="range" id="hue" min="0" max="360" step="1" value="0"
+                                   class="w-full h-2 bg-gray-500 rounded-lg appearance-none cursor-pointer range-lg">
+                        </div>
+
+                        <!-- Global Blur Slider -->
+                        <div>
+                            <label for="globalBlur" class="block text-sm font-medium text-gray-200 mb-1">
+                                Global Blur: <span id="globalBlurValue" class="font-bold text-purple-400">0px</span>
+                            </label>
+                            <input type="range" id="globalBlur" min="0" max="20" step="0.1" value="0"
+                                   class="w-full h-2 bg-gray-500 rounded-lg appearance-none cursor-pointer range-lg">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Global Filters Section Toggle -->
+                <div class="space-y-3">
+                    <h3 class="text-base font-semibold text-gray-100 pt-2 border-t border-gray-500">
+                        <label class="inline-flex items-center text-gray-100 cursor-pointer">
+                            <input type="checkbox" id="toggleGlobalFilters" class="form-checkbox text-purple-400 rounded">
+                            <span class="ml-2">Global Filters</span>
+                        </label>
+                    </h3>
+                    <div id="globalFiltersControls" class="hidden space-y-3">
+                        <div class="grid grid-cols-2 gap-2">
+                            <button id="grayscaleButton" class="bg-purple-700 bg-opacity-30 backdrop-blur-sm text-purple-100 font-semibold py-2 px-4 rounded-md shadow-md transition-all duration-300 hover:bg-opacity-40 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2">
+                                Grayscale
+                            </button>
+                            <button id="invertButton" class="bg-purple-700 bg-opacity-30 backdrop-blur-sm text-purple-100 font-semibold py-2 px-4 rounded-md shadow-md transition-all duration-300 hover:bg-opacity-40 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2">
+                                Invert Colors
+                            </button>
+                            <button id="sepiaButton" class="bg-purple-700 bg-opacity-30 backdrop-blur-sm text-purple-100 font-semibold py-2 px-4 rounded-md shadow-md transition-all duration-300 hover:bg-opacity-40 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2">
+                                Sepia
+                            </button>
+                            <button id="glowButton" class="bg-purple-700 bg-opacity-30 backdrop-blur-sm text-purple-100 font-semibold py-2 px-4 rounded-md shadow-md transition-all duration-300 hover:bg-opacity-40 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2">
+                                Glow
+                            </button>
+                        </div>
+                        <!-- Opacity Slider -->
+                        <div>
+                            <label for="opacity" class="block text-sm font-medium text-gray-200 mb-1">
+                                Opacity: <span id="opacityValue" class="font-bold text-purple-400">100%</span>
+                            </label>
+                            <input type="range" id="opacity" min="0" max="100" step="1" value="100"
+                                   class="w-full h-2 bg-gray-500 rounded-lg appearance-none cursor-pointer range-lg">
+                        </div>
+
+                        <!-- New: Color Overlay Section -->
+                        <div class="space-y-2 pt-2 border-t border-gray-500">
+                            <label class="inline-flex items-center text-gray-200">
+                                <input type="checkbox" id="enableColorOverlay" class="form-checkbox text-purple-400 rounded">
+                                <span class="ml-2">Enable Color Overlay</span>
+                            </label>
+                            <div id="colorOverlayControls" class="hidden pl-6 space-y-2">
+                                <div>
+                                    <label for="overlayColor" class="block text-sm font-medium text-gray-200 mb-1">Overlay Color:</label>
+                                    <input type="color" id="overlayColor" value="#000000"
+                                           class="w-full h-10 border border-gray-500 rounded-md shadow-sm">
+                                </div>
+                                <div>
+                                    <label for="overlayIntensity" class="block text-sm font-medium text-gray-200 mb-1">
+                                        Intensity: <span id="overlayIntensityValue" class="font-bold text-purple-400">0.0</span>
+                                    </label>
+                                    <input type="range" id="overlayIntensity" min="0" max="1" step="0.05" value="0"
+                                           class="w-full h-2 bg-gray-500 rounded-lg appearance-none cursor-pointer range-lg">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subject/Background Segmentation Effects Toggle -->
+                <div class="space-y-3">
+                    <h3 class="text-base font-semibold text-gray-100 pt-2 border-t border-gray-500">
+                        <label class="inline-flex items-center text-gray-100 cursor-pointer">
+                            <input type="checkbox" id="toggleSegmentationEffects" class="form-checkbox text-indigo-400 rounded">
+                            <span class="ml-2">Subject/Background Effects</span>
+                        </label>
+                    </h3>
+                    <div id="segmentationEffectsControls" class="hidden space-y-3">
+                        <p class="text-sm text-gray-300 mb-2">Note: MediaPipe segmentation (below) is primarily for human subjects.</p>
+
+                        <!-- Remove Background by Color -->
+                        <div class="space-y-2" id="removeBackgroundColorOption">
+                            <label class="inline-flex items-center text-gray-200">
+                                <input type="checkbox" id="removeBackgroundColorCheckbox" class="form-checkbox text-indigo-400 rounded">
+                                <span class="ml-2">Remove Background by Color</span>
+                            </label>
+                            <div id="backgroundColorControls" class="hidden pl-6 space-y-2">
+                                <div>
+                                    <label for="bgColor" class="block text-sm font-medium text-gray-200 mb-1">Target Color:</label>
+                                    <input type="color" id="bgColor" value="#FFFFFF"
+                                           class="w-full h-10 border border-gray-500 rounded-md shadow-sm">
+                                </div>
+                                <div>
+                                    <label for="colorTolerance" class="block text-sm font-medium text-gray-200 mb-1">
+                                        Tolerance: <span id="colorToleranceValue" class="font-bold text-indigo-400">50</span>
+                                    </label>
+                                    <input type="range" id="colorTolerance" min="0" max="255" step="1" value="50"
+                                           class="w-full h-2 bg-gray-500 rounded-lg appearance-none cursor-pointer range-lg">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Remove Background (MediaPipe) -->
+                        <div class="space-y-2" id="removeBackgroundOption">
+                            <label class="inline-flex items-center text-gray-200">
+                                <input type="checkbox" id="removeBackgroundCheckbox" class="form-checkbox text-indigo-400 rounded">
+                                <span class="ml-2">Remove Background (Human Subject)</span>
+                            </label>
+                        </div>
+
+                        <!-- Grayscale Options -->
+                        <div class="space-y-2" id="grayscaleModeOptions">
+                            <label class="inline-flex items-center text-gray-200">
+                                <input type="radio" name="grayscaleMode" value="none" class="form-radio text-indigo-400" checked>
+                                <span class="ml-2">Normal Colors</span>
+                            </label>
+                            <label class="inline-flex items-center text-gray-200">
+                                <input type="radio" name="grayscaleMode" value="bg_grayscale" class="form-radio text-indigo-400">
+                                <span class="ml-2">Grayscale Background</span>
+                            </label>
+                            <label class="inline-flex items-center text-gray-200">
+                                <input type="radio" name="grayscaleMode" value="subject_grayscale" class="form-radio text-indigo-400">
+                                <span class="ml-2">Grayscale Subject</span>
+                            </label>
+                        </div>
+
+                        <!-- Subject Highlight Tint Section -->
+                        <div class="space-y-2">
+                            <label class="inline-flex items-center text-gray-200">
+                                <input type="checkbox" id="highlightSubjectTint" class="form-checkbox text-indigo-400 rounded">
+                                <span class="ml-2">Enable Tint</span>
+                            </label>
+                            <div id="tintControls" class="hidden">
+                                <div>
+                                    <label for="highlightIntensity" class="block text-sm font-medium text-gray-200 mb-1">
+                                        Tint Intensity: <span id="highlightValue" class="font-bold text-indigo-400">0.5</span>
+                                    </label>
+                                    <input type="range" id="highlightIntensity" min="0" max="1" step="0.1" value="0.5"
+                                           class="w-full h-2 bg-gray-500 rounded-lg appearance-none cursor-pointer range-lg">
+                                </div>
+                                <div>
+                                    <label for="highlightColor" class="block text-sm font-medium text-gray-200 mb-1">
+                                        Tint Color:
+                                    </label>
+                                    <input type="color" id="highlightColor" value="#4F46E5"
+                                           class="w-full h-10 border border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-indigo-400 focus:border-indigo-400">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Subject Outline Section -->
+                        <div class="space-y-2">
+                            <label class="inline-flex items-center text-gray-200">
+                                <input type="checkbox" id="outlineSubject" class="form-checkbox text-indigo-400 rounded">
+                                <span class="ml-2">Enable Outline (Solid)</span>
+                            </label>
+                            <div id="outlineControls" class="hidden">
+                                <div>
+                                    <label for="outlineThickness" class="block text-sm font-medium text-gray-200 mb-1">
+                                        Outline Thickness: <span id="outlineThicknessValue" class="font-bold text-indigo-400">3px</span>
+                                    </label>
+                                    <input type="range" id="outlineThickness" min="1" max="10" step="1" value="3"
+                                           class="w-full h-2 bg-gray-500 rounded-lg appearance-none cursor-pointer range-lg">
+                                </div>
+                                <div>
+                                    <label for="outlineColor" class="block text-sm font-medium text-gray-200 mb-1">
+                                        Outline Color:
+                                    </label>
+                                    <input type="color" id="outlineColor" value="#FFFFFF"
+                                           class="w-full h-10 border border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-indigo-400 focus:focus:border-indigo-400">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Background Dimming Toggle -->
+                        <div class="space-y-2" id="dimBackgroundOption">
+                            <label class="inline-flex items-center text-gray-200">
+                                <input type="checkbox" id="dimBackground" class="form-checkbox text-indigo-400 rounded">
+                                <span class="ml-2">Dim Background</span>
+                            </label>
+                            <div id="dimIntensityControl" class="hidden">
+                                <label for="dimIntensity" class="block text-sm font-medium text-gray-200 mb-1">
+                                    Dimming Intensity: <span id="dimValue" class="font-bold text-indigo-400">0.5</span>
+                                </label>
+                                <input type="range" id="dimIntensity" min="0" max="1" step="0.1" value="0.5"
+                                       class="w-full h-2 bg-gray-500 rounded-lg appearance-none cursor-pointer range-lg">
+                            </div>
+                        </div>
+
+                        <!-- Background Blur Toggle -->
+                        <div class="space-y-2" id="blurBackgroundOption">
+                            <label class="inline-flex items-center text-gray-200">
+                                <input type="checkbox" id="blurBackgroundCheckbox" class="form-checkbox text-indigo-400 rounded">
+                                <span class="ml-2">Blur Background</span>
+                            </label>
+                            <div id="blurBackgroundIntensityControl" class="hidden">
+                                <label for="blurBackgroundIntensity" class="block text-sm font-medium text-gray-200 mb-1">
+                                    Blur Intensity: <span id="blurBackgroundValue" class="font-bold text-indigo-400">5px</span>
+                                </label>
+                                <input type="range" id="blurBackgroundIntensity" min="0" max="20" step="1" value="5"
+                                       class="w-full h-2 bg-gray-500 rounded-lg appearance-none cursor-pointer range-lg">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transformations Section Toggle -->
+                <div class="space-y-3">
+                    <h3 class="text-base font-semibold text-gray-100 pt-2 border-t border-gray-500">
+                        <label class="inline-flex items-center text-gray-100 cursor-pointer">
+                            <input type="checkbox" id="toggleTransformations" class="form-checkbox text-blue-400 rounded">
+                            <span class="ml-2">Transformations</span>
+                        </label>
+                    </h3>
+                    <div id="transformationsControls" class="hidden grid grid-cols-2 gap-2">
+                        <button id="flipHorizontalButton" class="bg-blue-700 bg-opacity-30 backdrop-blur-sm text-blue-100 font-semibold py-2 px-4 rounded-md shadow-md transition-all duration-300 hover:bg-opacity-40 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2">
+                            Flip Horizontal
+                        </button>
+                        <button id="flipVerticalButton" class="bg-blue-700 bg-opacity-30 backdrop-blur-sm text-blue-100 font-semibold py-2 px-4 rounded-md shadow-md transition-all duration-300 hover:bg-opacity-40 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2">
+                            Flip Vertical
+                        </button>
+                        <button id="rotate90Button" class="bg-blue-700 bg-opacity-30 backdrop-blur-sm text-blue-100 font-semibold py-2 px-4 rounded-md shadow-md transition-all duration-300 hover:bg-opacity-40 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 col-span-2">
+                            Rotate 90° CW
+                        </button>
+                        <button id="cropSquareButton" class="bg-blue-700 bg-opacity-30 backdrop-blur-sm text-blue-100 font-semibold py-2 px-4 rounded-md shadow-md transition-all duration-300 hover:bg-opacity-40 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 col-span-2">
+                            Crop to Center Square
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Resizing Inputs Section Toggle -->
+                <div class="space-y-3">
+                    <h3 class="text-base font-semibold text-gray-100 pt-2 border-t border-gray-500">
+                        <label class="inline-flex items-center text-gray-100 cursor-pointer">
+                            <input type="checkbox" id="toggleResize" class="form-checkbox text-purple-400 rounded">
+                            <span class="ml-2">Resize</span>
+                        </label>
+                    </h3>
+                    <div id="resizeControls" class="hidden flex items-center space-x-2">
+                        <div class="flex-1">
+                            <label for="resizeWidth" class="block text-sm font-medium text-gray-200 mb-1">Width:</label>
+                            <input type="number" id="resizeWidth" placeholder="Auto"
+                                   class="w-full text-gray-200 bg-gray-700 bg-opacity-20 backdrop-blur-sm border border-gray-500 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-purple-400 focus:border-purple-400">
+                        </div>
+                        <div class="flex-1">
+                            <label for="resizeHeight" class="block text-sm font-medium text-gray-200 mb-1">Height:</label>
+                            <input type="number" id="resizeHeight" placeholder="Auto"
+                                   class="w-full text-gray-200 bg-gray-700 bg-opacity-20 backdrop-blur-sm border border-gray-500 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-purple-400 focus:border-purple-400">
+                        </div>
+                        <button id="applyResizeButton" class="mt-5 bg-purple-700 bg-opacity-30 backdrop-blur-sm text-purple-100 font-semibold py-2 px-4 rounded-md shadow-md transition-all duration-300 hover:bg-opacity-40 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2">
+                            Apply
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-col space-y-2 mt-auto pt-2 border-t border-gray-500">
+                    <button id="resetButton" class="bg-gray-600 bg-opacity-30 backdrop-blur-sm text-gray-100 font-semibold py-2 px-4 rounded-md shadow-md transition-all duration-300 hover:bg-opacity-40 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2">
+                        Reset All
+                    </button>
+                    <div class="flex items-center space-x-2">
+                        <select id="downloadFormat" class="flex-1 text-gray-200 bg-gray-700 bg-opacity-20 backdrop-blur-sm border border-gray-500 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-green-400 focus:border-green-400">
+                            <option value="image/png">PNG</option>
+                            <option value="image/jpeg">JPEG</option>
+                            <option value="image/webp">WebP</option>
+                            <option value="image/bmp">BMP</option>
+                            <option value="image/tiff">TIFF</option>
+                        </select>
+                        <button id="downloadButton" class="bg-green-700 bg-opacity-30 backdrop-blur-sm text-green-100 font-semibold py-2 px-4 rounded-md shadow-md transition-all duration-300 hover:bg-opacity-40 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2">
+                            Download
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dark/Light Mode Toggle -->
+        <button id="darkModeToggle" class="absolute top-4 right-4 p-3 bg-gray-700 bg-opacity-50 rounded-full shadow-lg hover:bg-opacity-70 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 z-50">
+            <!-- Sun icon for Light Mode -->
+            <svg id="sunIcon" class="w-6 h-6 text-gray-100" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2.25a.75.75 0 00-.75.75v3a.75.75 0 001.5 0v-3a.75.75 0 00-.75-.75zM12 18.75a.75.75 0 00-.75.75v3a.75.75 0 001.5 0v-3a.75.75 0 00-.75-.75zM19.794 8.206a.75.75 0 00-1.06-1.06l-2.121 2.122a.75.75 0 001.06 1.06l2.121-2.122zM4.206 15.794a.75.75 0 00-1.06 1.06l2.122 2.121a.75.75 0 001.06-1.06l-2.122-2.121zM2.25 12a.75.75 0 00-.75.75h-3a.75.75 0 000-1.5h3a.75.75 0 00.75.75zM21.75 12a.75.75 0 00-.75.75h-3a.75.75 0 000-1.5h3a.75.75 0 00.75.75zM4.206 8.206a.75.75 0 011.06-1.06l2.121 2.122a.75.75 0 01-1.06 1.06L4.206 8.206zM15.794 19.794a.75.75 0 011.06-1.06l2.121 2.122a.75.75 0 01-1.06 1.06l-2.121-2.122zM12 16.5A4.5 4.5 0 1012 7.5a4.5 4.5 0 000 9z" />
+            </svg>
+            <!-- Moon icon for Dark Mode -->
+            <svg id="moonIcon" class="w-6 h-6 text-gray-100 hidden" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 3a9 9 0 00-9 9c0 4.97 4.03 9 9 9a9 9 0 009-9c0-.46-.03-.92-.08-1.37A6.97 6.97 0 0112 3zm0 2c-3.86 0-7 3.14-7 7s3.14 7 7 7a7 7 0 006.33-3.88c-.52-.39-1.01-.83-1.47-1.3a5.97 5.97 0 01-8.38-8.38A7 7 0 0012 5z" />
+            </svg>
+        </button>
+
+        <!-- Info Button -->
+        <button id="infoButton" class="absolute bottom-4 right-4 p-3 bg-gray-700 bg-opacity-50 rounded-full shadow-lg hover:bg-opacity-70 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 z-50">
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9.5 9.5a1 1 0 00-1 1v3.5a1 1 0 001 1h.046a.25.25 0 00.25-.25V11a1 1 0 00-1-1H9.5z" clip-rule="evenodd"></path>
+            </svg>
+        </button>
+
+
+        <!-- Info Modal -->
+        <div id="infoModal" class="hidden fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+            <div class="bg-gray-800 rounded-lg p-6 shadow-xl w-11/12 md:w-1/2 lg:w-1/3 border border-gray-600 relative">
+                <h3 class="text-xl font-bold text-gray-100 mb-4">Unleash Your Image's Potential with Nebula! ✨ </h3>
+                <p class="text-gray-100 text-sm mb-4">
+                    Welcome to Nebula, your all-in-one web-based image editing powerhouse! Dive into a universe of creative possibilities and transform your photos with ease. From fundamental adjustments to advanced AI-powered effects, Nebula puts professional-grade tools right at your fingertips.
+                </p>
+                <h3 class="font-semibold mb-2">Features:</h3>
+                <ul class="list-disc list-inside mb-4 text-sm">
+                    <li>Global Adjustments: Master brightness, contrast, saturation, hue, and apply a subtle global blur to set the perfect mood.</li>
+                    <li>Creative Filters: Experiment with classic grayscale, invert colors for a dramatic flair, add a nostalgic sepia tone, or give your subjects a radiant glow. Control the overall opacity for stunning blends.</li>
+                    <li>Color Overlays: Infuse your images with specific color moods and intensities to achieve unique artistic expressions.</li>
+                    <li>AI-Powered Segmentation: Harness MediaPipe's intelligent segmentation to effortlessly remove backgrounds (especially for human subjects!), isolate subjects, grayscale either foreground or background, or add vibrant tints and outlines to make your subject pop.</li>
+                    <li>Background Magic: Dim or blur your backgrounds to draw focus to your main subject, creating depth and professional-looking portraits.</li>
+                    <li>Transformations: Precisely flip, rotate, crop to a perfect square, or resize your images with intuitive controls.</li>
+                    <li>Flexible Downloads: Save your masterpiece in various formats including PNG, JPEG, WebP, BMP, and TIFF.</li>
+                </ul>
+                <h3 class="font-semibold mb-2">How to Use:</h3>
+                <ol class="list-decimal list-inside mb-4 text-sm">
+                    <li><strong>Upload Image:</strong> Click the "Upload Image" button and select an image from your device.</li>
+                    <li><strong>Adjust Settings:</strong> Use the sliders and checkboxes in the right panel to apply various effects and transformations.</li>
+                    <li><strong>Segmentation:</strong> For human subject background removal or effects, ensure "Remove Background (Human Subject)" is checked.</li>
+                    <li><strong>Download:</strong> Select your desired format and click "Download" to save your masterpiece!</li>
+                </ol>
+                <p class="text-gray-100 text-sm">
+                    Ready to create something amazing? Upload an image and let Nebula inspire your next visual masterpiece!
+                </p>
+                <div class="flex justify-end">
+                    <button id="closeInfoModal" class="bg-indigo-700 text-white font-semibold py-2 px-4 rounded-md shadow-md transition-all duration-300 hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2">
+                        Got It!
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- MediaPipe Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js" crossorigin="anonymous"></script>
+    <script>
+        // DOM Elements
+        const imageUpload = document.getElementById('imageUpload');
+        const imageCanvas = document.getElementById('imageCanvas');
+        const ctx = imageCanvas.getContext('2d');
+        const placeholderText = document.getElementById('placeholderText');
+        const loadingDiv = document.getElementById('loading');
+        const loadingMessage = document.getElementById('loadingMessage');
+        const loadingDetail = document.getElementById('loadingDetail');
+
+        // Master toggles for sections
+        const toggleGlobalAdjustments = document.getElementById('toggleGlobalAdjustments');
+        const globalAdjustmentsControls = document.getElementById('globalAdjustmentsControls');
+        const toggleGlobalFilters = document.getElementById('toggleGlobalFilters');
+        const globalFiltersControls = document.getElementById('globalFiltersControls');
+        const toggleSegmentationEffects = document.getElementById('toggleSegmentationEffects');
+        const segmentationEffectsControls = document.getElementById('segmentationEffectsControls');
+        const toggleTransformations = document.getElementById('toggleTransformations');
+        const transformationsControls = document.getElementById('transformationsControls');
+        const toggleResize = document.getElementById('toggleResize');
+        const resizeControls = document.getElementById('resizeControls');
+
+        // Global Adjustments
+        const brightnessInput = document.getElementById('brightness');
+        const brightnessValueDisplay = document.getElementById('brightnessValue');
+        const contrastInput = document.getElementById('contrast');
+        const contrastValueDisplay = document.getElementById('contrastValue');
+        const saturationInput = document.getElementById('saturation');
+        const saturationValueDisplay = document.getElementById('saturationValue');
+        const hueInput = document.getElementById('hue');
+        const hueValueDisplay = document.getElementById('hueValue');
+        const globalBlurInput = document.getElementById('globalBlur');
+        const globalBlurValueDisplay = document.getElementById('globalBlurValue');
+
+        // Global Filters
+        const grayscaleButton = document.getElementById('grayscaleButton');
+        const invertButton = document.getElementById('invertButton');
+        const sepiaButton = document.getElementById('sepiaButton');
+        const glowButton = document.getElementById('glowButton');
+        const opacityInput = document.getElementById('opacity');
+        const opacityValueDisplay = document.getElementById('opacityValue');
+
+        // Color Overlay Elements
+        const enableColorOverlayCheckbox = document.getElementById('enableColorOverlay');
+        const colorOverlayControls = document.getElementById('colorOverlayControls');
+        const overlayColorInput = document.getElementById('overlayColor');
+        const overlayIntensityInput = document.getElementById('overlayIntensity');
+        const overlayIntensityValueDisplay = document.getElementById('overlayIntensityValue');
+
+        // Subject/Background Segmentation Effects
+        const removeBackgroundColorCheckbox = document.getElementById('removeBackgroundColorCheckbox');
+        const backgroundColorControls = document.getElementById('backgroundColorControls');
+        const bgColorInput = document.getElementById('bgColor');
+        const colorToleranceInput = document.getElementById('colorTolerance');
+        const colorToleranceValueDisplay = document.getElementById('colorToleranceValue');
+
+        const removeBackgroundCheckbox = document.getElementById('removeBackgroundCheckbox');
+        const grayscaleModeRadios = document.querySelectorAll('input[name="grayscaleMode"]');
+        const grayscaleModeOptions = document.getElementById('grayscaleModeOptions');
+        const highlightSubjectTintCheckbox = document.getElementById('highlightSubjectTint');
+        const tintControlsDiv = document.getElementById('tintControls');
+        const highlightIntensityInput = document.getElementById('highlightIntensity');
+        const highlightValueDisplay = document.getElementById('highlightValue');
+        const highlightColorInput = document.getElementById('highlightColor');
+        const outlineSubjectCheckbox = document.getElementById('outlineSubject');
+        const outlineControlsDiv = document.getElementById('outlineControls');
+        const outlineThicknessInput = document.getElementById('outlineThickness');
+        const outlineThicknessValueDisplay = document.getElementById('outlineThicknessValue');
+        const outlineColorInput = document.getElementById('outlineColor');
+        const dimBackgroundCheckbox = document.getElementById('dimBackground');
+        const dimIntensityControl = document.getElementById('dimIntensityControl');
+        const dimIntensityInput = document.getElementById('dimIntensity');
+        const dimValueDisplay = document.getElementById('dimValue');
+        const dimBackgroundOption = document.getElementById('dimBackgroundOption');
+        const blurBackgroundCheckbox = document.getElementById('blurBackgroundCheckbox');
+        const blurBackgroundIntensityControl = document.getElementById('blurBackgroundIntensityControl');
+        const blurBackgroundIntensityInput = document.getElementById('blurBackgroundIntensity');
+        const blurBackgroundValueDisplay = document.getElementById('blurBackgroundValue');
+        const blurBackgroundOption = document.getElementById('blurBackgroundOption');
+
+        // Transformations
+        const flipHorizontalButton = document.getElementById('flipHorizontalButton');
+        const flipVerticalButton = document.getElementById('flipVerticalButton');
+        const rotate90Button = document.getElementById('rotate90Button');
+        const cropSquareButton = document.getElementById('cropSquareButton');
+        const resizeWidthInput = document.getElementById('resizeWidth');
+        const resizeHeightInput = document.getElementById('resizeHeight');
+        const applyResizeButton = document.getElementById('applyResizeButton');
+
+        // Action Buttons
+        const resetButton = document.getElementById('resetButton');
+        const downloadButton = document.getElementById('downloadButton');
+        const downloadFormat = document.getElementById('downloadFormat');
+
+        // Info Modal Elements
+        const infoButton = document.getElementById('infoButton');
+        const infoModal = document.getElementById('infoModal');
+        const closeInfoModal = document.getElementById('closeInfoModal');
+
+        // Dark/Light Mode Elements
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const sunIcon = document.getElementById('sunIcon');
+        const moonIcon = document.getElementById('moonIcon');
+
+        let segmentation;
+        let originalImage = new Image();
+        let currentImage = new Image();
+        let currentSegmentationMask = null;
+
+        let editorSettings = {
+        // Master toggles
+        enableGlobalAdjustments: false,
+        enableGlobalFilters: false,
+        enableSegmentationEffects: false,
+        enableTransformations: false,
+        enableResize: false,
+
+        // Global Adjustments
+        brightness: 100,
+        contrast: 100,
+        saturation: 100,
+        hue: 0,
+        globalBlur: 0,
+        // Global Filters
+        globalGrayscale: false,
+        globalInvert: false,
+        globalSepia: false,
+        globalGlow: false,
+        globalOpacity: 100,
+
+        // Color Overlay
+        enableColorOverlay: false,
+        overlayColor: '#000000',
+        overlayIntensity: 0.0,
+
+        // Subject/Background Segmentation Effects
+        removeBackgroundColor: false,
+        bgColor: '#FFFFFF',
+        colorTolerance: 50,
+
+        removeBackground: false,
+        grayscaleMode: 'none',
+        highlightSubjectTint: false,
+        highlightIntensity: 0.5,
+        highlightColor: '#4F46E5',
+        outlineSubject: false,
+        outlineThickness: 3,
+        outlineColor: '#FFFFFF',
+        dimBackground: false,
+        dimIntensity: 0.5,
+        blurBackground: false,
+        blurBackgroundIntensity: 5
+        };
+
+        // --- Dark/Light Mode Logic ---
+        function applyTheme(theme) {
+        if (theme === 'light') {
+        document.body.classList.add('light');
+        sunIcon.classList.add('hidden');
+        moonIcon.classList.remove('hidden');
+        } else {
+        document.body.classList.remove('light');
+        sunIcon.classList.remove('hidden');
+        moonIcon.classList.add('hidden');
+        }
+        // Update checkerboard and potentially other elements
+        updateCanvasBackground();
+        }
+
+        // Check for saved theme preference on load
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+        applyTheme(savedTheme);
+        } else {
+        // Default to dark mode if no preference is saved
+        applyTheme('dark');
+        }
+
+        darkModeToggle.addEventListener('click', () => {
+        if (document.body.classList.contains('light')) {
+        applyTheme('dark');
+        localStorage.setItem('theme', 'dark');
+        } else {
+        applyTheme('light');
+        localStorage.setItem('theme', 'light');
+        }
+        });
+
+        // --- Model Loading ---
+        async function loadSegmentationModel() {
+        loadingDiv.classList.remove('hidden');
+        loadingMessage.textContent = 'Loading Segmentation Model...';
+        loadingDetail.textContent = 'This model is used for subject/background effects.';
+
+        try {
+        segmentation = new SelfieSegmentation({
+        locateFile: (file) => {
+        return `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`;
+        }
+        });
+
+        segmentation.setOptions({
+        modelSelection: 1,
+        selfieMode: false,
+        });
+
+        segmentation.onResults(onResults);
+
+        console.log('Selfie Segmentation model loaded successfully!');
+        loadingDiv.classList.add('hidden');
+        } catch (error) {
+        console.error('Failed to load segmentation model:', error);
+        loadingMessage.textContent = 'Error Loading Model!';
+        loadingDetail.textContent = 'Could not load the segmentation model. Check your internet connection or try refreshing the page. Details: ' + error.message;
+        loadingDiv.classList.remove('bg-indigo-700', 'border-indigo-500', 'text-indigo-100'); // Clear success styles
+        loadingDiv.classList.add('bg-red-700', 'border-red-500', 'text-red-100'); // Add error styles
+        }
+        }
+
+        // --- Segmentation Results Callback ---
+        function onResults(results) {
+        currentSegmentationMask = results.segmentationMask;
+        drawImage(); // Redraw image with new mask and current settings
+        }
+
+        // --- Image Loading and Initial Drawing ---
+        imageUpload.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (file) {
+        // Show loading indicator when image selection begins
+        loadingDiv.classList.remove('hidden');
+        loadingMessage.textContent = 'Loading Image...';
+        loadingDetail.textContent = 'Please wait while your image is being processed.';
+        loadingDiv.classList.remove('bg-red-700', 'border-red-500', 'text-red-100');
+        loadingDiv.classList.add('bg-indigo-700', 'border-indigo-500', 'text-indigo-100');
+
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+        // Clear previous load/error handlers to prevent multiple firings
+        originalImage.onload = null;
+        originalImage.onerror = null;
+
+        originalImage.onerror = () => {
+        console.error('Error loading image file.');
+        placeholderText.textContent = 'Error loading image. Please try another file.';
+        placeholderText.classList.remove('hidden');
+        imageUpload.value = '';
+        clearCanvas();
+        loadingDiv.classList.add('hidden'); // Hide loading on error
+        originalImage.onerror = null; // Prevent repeated errors
+        };
+
+        originalImage.onload = async () => {
+        // Hide loading indicator after image is loaded and before processing starts
+        loadingDiv.classList.add('hidden');
+
+        // Reset all editor settings to default
+        resetEditorControls();
+
+        // Set currentImage to originalImage initially
+        currentImage.src = originalImage.src;
+        currentImage.onload = async () => {
+        placeholderText.classList.add('hidden');
+        imageCanvas.width = currentImage.naturalWidth;
+        imageCanvas.height = currentImage.naturalHeight;
+
+        // Send image to segmentation model for processing
+        // This runs in the background and will trigger onResults later
+        if (!segmentation) {
+        loadingMessage.textContent = 'Processing image... Model not loaded, attempting to load.';
+        loadingDiv.classList.remove('hidden');
+        await loadSegmentationModel();
+        if (!segmentation) {
+        drawImage();
+        return;
+        }
+        }
+        // Show loading indicator again while segmentation model processes (if not already visible)
+        loadingDiv.classList.remove('hidden');
+        loadingMessage.textContent = 'Processing image with AI...';
+        loadingDetail.textContent = 'Applying segmentation effects.';
+        await segmentation.send({image: originalImage});
+        loadingDiv.classList.add('hidden'); // Hide after segmentation processing
+        drawImage();
+        currentImage.onload = null; // Prevent repeated loading
+        };
+        originalImage.onload = null; // Prevent repeated loading
+        };
+        originalImage.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+        }
+        });
+
+        // --- Core Drawing Function (Applies all effects based on current state) ---
+        function drawImage() { // Exported for utils.js access
+        if (!currentImage.src) {
+        ctx.clearRect(0, 0, imageCanvas.width, imageCanvas.height);
+        // Also update background if no image is loaded
+        updateCanvasBackground();
+        return;
+        }
+
+        ctx.clearRect(0, 0, imageCanvas.width, imageCanvas.height);
+        const { width, height } = imageCanvas;
+
+        // Step 1: Render currentImage with GLOBAL adjustments/filters to a temporary canvas
+        const baseFilteredImageCanvas = document.createElement('canvas');
+        const baseFilteredCtx = baseFilteredImageCanvas.getContext('2d');
+        baseFilteredImageCanvas.width = width;
+        baseFilteredImageCanvas.height = height;
+
+        let globalFilters = [];
+        if (editorSettings.enableGlobalAdjustments) {
+        globalFilters.push(`brightness(${editorSettings.brightness}%)`);
+        globalFilters.push(`contrast(${editorSettings.contrast}%)`);
+        globalFilters.push(`saturate(${editorSettings.saturation}%)`);
+        globalFilters.push(`hue-rotate(${editorSettings.hue}deg)`);
+        if (editorSettings.globalBlur > 0) {
+        globalFilters.push(`blur(${editorSettings.globalBlur}px)`);
+        }
+        }
+        if (editorSettings.enableGlobalFilters) {
+        if (editorSettings.globalGrayscale) {
+        globalFilters.push('grayscale(100%)');
+        }
+        if (editorSettings.globalInvert) {
+        globalFilters.push('invert(100%)');
+        }
+        if (editorSettings.globalSepia) {
+        globalFilters.push('sepia(100%)');
+        }
+        if (editorSettings.globalGlow) {
+        // Adjust glow effect strength and color as needed
+        globalFilters.push('drop-shadow(0px 0px 8px rgba(255, 255, 0, 0.8))');
+        }
+        globalFilters.push(`opacity(${editorSettings.globalOpacity}%)`);
+        }
+
+        baseFilteredCtx.filter = globalFilters.join(' ');
+        baseFilteredCtx.drawImage(currentImage, 0, 0, width, height);
+        baseFilteredCtx.filter = 'none';
+
+        // Apply Color Overlay on top of globally filtered image
+        if (editorSettings.enableGlobalFilters && editorSettings.enableColorOverlay && editorSettings.overlayIntensity > 0) {
+        baseFilteredCtx.globalAlpha = editorSettings.overlayIntensity;
+        baseFilteredCtx.fillStyle = editorSettings.overlayColor;
+        baseFilteredCtx.fillRect(0, 0, width, height);
+        baseFilteredCtx.globalAlpha = 1; // Reset global alpha
+        }
+
+
+        // Step 2: Determine if segmentation effects should be applied (MediaPipe-based)
+        const useMediaPipeSegmentationEffects = editorSettings.enableSegmentationEffects && currentSegmentationMask && (
+        editorSettings.removeBackground ||
+        editorSettings.grayscaleMode !== 'none' ||
+        editorSettings.highlightSubjectTint ||
+        editorSettings.outlineSubject ||
+        editorSettings.dimBackground ||
+        editorSettings.blurBackground
+        );
+
+        // Step 3: Apply color-based background removal if enabled and MediaPipe is not overriding background
+        if (editorSettings.enableSegmentationEffects && editorSettings.removeBackgroundColor && !editorSettings.removeBackground && editorSettings.grayscaleMode === 'none' && !editorSettings.dimBackground && !editorSettings.blurBackground) {
+        // Draw the original image with global filters to an intermediate canvas
+        const tempCanvas = document.createElement('canvas');
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCanvas.width = width;
+        tempCanvas.height = height;
+        tempCtx.drawImage(baseFilteredImageCanvas, 0, 0, width, height);
+
+        const imageData = tempCtx.getImageData(0, 0, width, height);
+        const data = imageData.data;
+        const targetColor = hexToRgb(editorSettings.bgColor); // Use imported hexToRgb
+        const tolerance = editorSettings.colorTolerance;
+
+        for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+
+        const dist = Math.sqrt(
+        Math.pow(r - targetColor.r, 2) +
+        Math.pow(g - targetColor.g, 2) +
+        Math.pow(b - targetColor.b, 2)
+        );
+
+        if (dist < tolerance) {
+        data[i + 3] = 0; // Set alpha to 0 (transparent)
+        }
+        }
+        ctx.putImageData(imageData, 0, 0);
+        } else if (useMediaPipeSegmentationEffects) {
+        // --- Prepare Background Layer with segmentation effects ---
+        const backgroundLayer = document.createElement('canvas');
+        const bgCtx = backgroundLayer.getContext('2d');
+        backgroundLayer.width = width;
+        backgroundLayer.height = height;
+
+        // Draw the full base filtered image
+        bgCtx.drawImage(baseFilteredImageCanvas, 0, 0, width, height);
+        // Mask out the subject to get only the background
+        bgCtx.globalCompositeOperation = 'destination-out';
+        bgCtx.drawImage(currentSegmentationMask, 0, 0, width, height);
+        bgCtx.globalCompositeOperation = 'source-over';
+
+        // Apply specific background filters (grayscale, dim, blur)
+        let backgroundSpecificFilters = [];
+        if (editorSettings.grayscaleMode === 'bg_grayscale') {
+        backgroundSpecificFilters.push('grayscale(100%)');
+        } else {
+        if (editorSettings.dimBackground) {
+        backgroundSpecificFilters.push(`brightness(${100 - (editorSettings.dimIntensity * 50)}%)`);
+        backgroundSpecificFilters.push(`saturate(${100 - (editorSettings.dimIntensity * 50)}%)`);
+        }
+        if (editorSettings.blurBackground && editorSettings.blurBackgroundIntensity > 0) {
+        backgroundSpecificFilters.push(`blur(${editorSettings.blurBackgroundIntensity}px)`);
+        }
+        }
+        if (backgroundSpecificFilters.length > 0) {
+        bgCtx.filter = backgroundSpecificFilters.join(' ');
+        bgCtx.drawImage(baseFilteredImageCanvas, 0, 0, width, height);
+        bgCtx.globalCompositeOperation = 'destination-out';
+        bgCtx.drawImage(currentSegmentationMask, 0, 0, width, height);
+        bgCtx.filter = 'none';
+        }
+
+        // Only draw background if 'remove background' is not active
+        if (!editorSettings.removeBackground) {
+        ctx.drawImage(backgroundLayer, 0, 0);
+        }
+
+        // --- Prepare Subject Layer with segmentation effects ---
+        const subjectLayer = document.createElement('canvas');
+        const subjectCtx = subjectLayer.getContext('2d');
+        subjectLayer.width = width;
+        subjectLayer.height = height;
+
+        // Draw the full base filtered image
+        subjectCtx.drawImage(baseFilteredImageCanvas, 0, 0, width, height);
+        // Mask to only the subject area
+        subjectCtx.globalCompositeOperation = 'destination-atop';
+        subjectCtx.drawImage(currentSegmentationMask, 0, 0, width, height);
+        subjectCtx.globalCompositeOperation = 'source-over';
+
+        // Apply specific subject filters (grayscale)
+        if (editorSettings.grayscaleMode === 'subject_grayscale') {
+        subjectCtx.filter = 'grayscale(100%)';
+        subjectCtx.drawImage(baseFilteredImageCanvas, 0, 0, width, height);
+        subjectCtx.globalCompositeOperation = 'destination-atop';
+        subjectCtx.drawImage(currentSegmentationMask, 0, 0, width, height);
+        subjectCtx.filter = 'none';
+        }
+        ctx.drawImage(subjectLayer, 0, 0);
+
+        // --- Draw Outline (on top of everything) ---
+        if (editorSettings.outlineSubject) {
+        const outlineCanvas = document.createElement('canvas');
+        const outlineCtx = outlineCanvas.getContext('2d');
+        outlineCanvas.width = width;
+        outlineCanvas.height = height;
+
+        outlineCtx.drawImage(currentSegmentationMask, 0, 0, width, height);
+        outlineCtx.globalCompositeOperation = 'source-atop';
+        outlineCtx.fillStyle = editorSettings.outlineColor;
+        outlineCtx.fillRect(0, 0, width, height);
+
+        ctx.save();
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.filter = `blur(${editorSettings.outlineThickness}px)`;
+        ctx.drawImage(outlineCanvas, 0, 0, width, height);
+        ctx.filter = 'none';
+
+        // Redraw the actual subject pixels clearly on top of the blurred outline
+        ctx.globalCompositeOperation = 'destination-atop';
+        ctx.drawImage(subjectLayer, 0, 0, width, height);
+        ctx.restore();
+        }
+
+        // --- Draw Subject Tint (on top of everything) ---
+        if (editorSettings.highlightSubjectTint) {
+        const tintCanvas = document.createElement('canvas');
+        const tintCtx = tintCanvas.getContext('2d');
+        tintCanvas.width = width;
+        tintCanvas.height = height;
+
+        tintCtx.drawImage(currentSegmentationMask, 0, 0, width, height);
+        tintCtx.globalCompositeOperation = 'source-atop';
+        tintCtx.fillStyle = editorSettings.highlightColor;
+        tintCtx.globalAlpha = editorSettings.highlightIntensity;
+        tintCtx.fillRect(0, 0, width, height);
+        tintCtx.globalAlpha = 1;
+
+        ctx.drawImage(tintCanvas, 0, 0, width, height);
+        }
+
+        } else {
+        // If no segmentation effects (either type), just draw the base filtered image
+        ctx.drawImage(baseFilteredImageCanvas, 0, 0, width, height);
+        }
+        updateCanvasBackground(); // Update checkerboard after drawing
+        }
+
+        // Helper function to convert hex color to RGB
+        function hexToRgb(hex) {
+        const bigint = parseInt(hex.slice(1), 16);
+        const r = (bigint >> 16) & 255;
+        const g = (bigint >> 8) & 255;
+        const b = bigint & 255;
+        return { r, g, b };
+        }
+
+        // --- Helper Function for Destructive Transformations (Crop, Resize, Flip, Rotate) ---
+        function applyDestructiveTransformation(transformFn) {
+        if (!currentImage.src) {
+        console.warn('No image loaded for transformation.');
+        return;
+        }
+
+        // Show loading indicator for transformations
+        loadingDiv.classList.remove('hidden');
+        loadingMessage.textContent = 'Applying Transformation...';
+        loadingDetail.textContent = 'Please wait.';
+
+        const tempCanvas = document.createElement('canvas');
+        const tempCtx = tempCanvas.getContext('2d');
+
+        transformFn(tempCtx, tempCanvas);
+
+        currentImage.onload = async () => { // Make this async to await segmentation.send
+        imageCanvas.width = currentImage.naturalWidth;
+        imageCanvas.height = currentImage.naturalHeight;
+        if (segmentation) {
+        loadingMessage.textContent = 'Processing image with AI...';
+        loadingDetail.textContent = 'Applying segmentation effects.';
+        await segmentation.send({image: currentImage});
+        }
+        drawImage();
+        loadingDiv.classList.add('hidden'); // Hide loading after drawImage
+        };
+        currentImage.src = tempCanvas.toDataURL();
+        }
+
+        // --- Control Event Listeners ---
+
+        // Master Toggles
+        toggleGlobalAdjustments.addEventListener('change', (event) => {
+        editorSettings.enableGlobalAdjustments = event.target.checked;
+        if (editorSettings.enableGlobalAdjustments) {
+        globalAdjustmentsControls.classList.remove('hidden');
+        } else {
+        globalAdjustmentsControls.classList.add('hidden');
+        }
+        drawImage();
+        });
+
+        toggleGlobalFilters.addEventListener('change', (event) => {
+        editorSettings.enableGlobalFilters = event.target.checked;
+        if (editorSettings.enableGlobalFilters) {
+        globalFiltersControls.classList.remove('hidden');
+        } else {
+        globalFiltersControls.classList.add('hidden');
+        }
+        drawImage();
+        });
+
+        toggleSegmentationEffects.addEventListener('change', (event) => {
+        editorSettings.enableSegmentationEffects = event.target.checked;
+        if (editorSettings.enableSegmentationEffects) {
+        segmentationEffectsControls.classList.remove('hidden');
+        } else {
+        segmentationEffectsControls.classList.add('hidden');
+        }
+        drawImage();
+        });
+
+        toggleTransformations.addEventListener('change', (event) => {
+        editorSettings.enableTransformations = event.target.checked;
+        if (editorSettings.enableTransformations) {
+        transformationsControls.classList.remove('hidden');
+        } else {
+        transformationsControls.classList.add('hidden');
+        }
+        drawImage();
+        });
+
+        toggleResize.addEventListener('change', (event) => {
+        editorSettings.enableResize = event.target.checked;
+        if (editorSettings.enableResize) {
+        resizeControls.classList.remove('hidden');
+        } else {
+        resizeControls.classList.add('hidden');
+        }
+        });
+
+
+        // Global Adjustments (visibility controlled by toggleGlobalAdjustments)
+        brightnessInput.addEventListener('input', (event) => { editorSettings.brightness = parseInt(event.target.value); brightnessValueDisplay.textContent = `${editorSettings.brightness}%`; drawImage(); });
+        contrastInput.addEventListener('input', (event) => { editorSettings.contrast = parseInt(event.target.value); contrastValueDisplay.textContent = `${editorSettings.contrast}%`; drawImage(); });
+        saturationInput.addEventListener('input', (event) => { editorSettings.saturation = parseInt(event.target.value); saturationValueDisplay.textContent = `${editorSettings.saturation}%`; drawImage(); });
+        hueInput.addEventListener('input', (event) => { editorSettings.hue = parseInt(event.target.value); hueValueDisplay.textContent = `${editorSettings.hue}°`; drawImage(); });
+        globalBlurInput.addEventListener('input', (event) => { editorSettings.globalBlur = parseFloat(event.target.value); globalBlurValueDisplay.textContent = `${editorSettings.globalBlur}px`; drawImage(); });
+
+        // Global Filters (visibility controlled by toggleGlobalFilters)
+        grayscaleButton.addEventListener('click', () => {
+        editorSettings.globalGrayscale = !editorSettings.globalGrayscale;
+        grayscaleButton.classList.toggle('active', editorSettings.globalGrayscale);
+        drawImage();
+        });
+        invertButton.addEventListener('click', () => {
+        editorSettings.globalInvert = !editorSettings.globalInvert;
+        invertButton.classList.toggle('active', editorSettings.globalInvert);
+        drawImage();
+        });
+        sepiaButton.addEventListener('click', () => {
+        editorSettings.globalSepia = !editorSettings.globalSepia;
+        sepiaButton.classList.toggle('active', editorSettings.globalSepia);
+        drawImage();
+        });
+        glowButton.addEventListener('click', () => {
+        editorSettings.globalGlow = !editorSettings.globalGlow;
+        glowButton.classList.toggle('active', editorSettings.globalGlow);
+        drawImage();
+        });
+        opacityInput.addEventListener('input', (event) => {
+        editorSettings.globalOpacity = parseInt(event.target.value);
+        opacityValueDisplay.textContent = `${editorSettings.globalOpacity}%`;
+        drawImage();
+        });
+
+        // New: Color Overlay Event Listeners
+        enableColorOverlayCheckbox.addEventListener('change', (event) => {
+        editorSettings.enableColorOverlay = event.target.checked;
+        if (editorSettings.enableColorOverlay) {
+        colorOverlayControls.classList.remove('hidden');
+        } else {
+        colorOverlayControls.classList.add('hidden');
+        }
+        drawImage();
+        });
+        overlayColorInput.addEventListener('input', (event) => {
+        editorSettings.overlayColor = event.target.value;
+        drawImage();
+        });
+        overlayIntensityInput.addEventListener('input', (event) => {
+        editorSettings.overlayIntensity = parseFloat(event.target.value);
+        overlayIntensityValueDisplay.textContent = editorSettings.overlayIntensity.toFixed(2);
+        drawImage();
+        });
+
+
+        // Segmentation-Dependent Controls (visibility controlled by toggleSegmentationEffects)
+
+        // Remove Background by Color
+        removeBackgroundColorCheckbox.addEventListener('change', (event) => {
+        editorSettings.removeBackgroundColor = event.target.checked;
+        if (editorSettings.removeBackgroundColor) {
+        backgroundColorControls.classList.remove('hidden');
+        // Disable conflicting MediaPipe background effects
+        removeBackgroundCheckbox.checked = false;
+        editorSettings.removeBackground = false;
+        grayscaleModeRadios.forEach(radio => radio.checked = (radio.value === 'none'));
+        editorSettings.grayscaleMode = 'none';
+        dimBackgroundCheckbox.checked = false;
+        editorSettings.dimBackground = false;
+        dimIntensityControl.classList.add('hidden');
+        blurBackgroundCheckbox.checked = false;
+        editorSettings.blurBackground = false;
+        blurBackgroundIntensityControl.classList.add('hidden');
+        } else {
+        backgroundColorControls.classList.add('hidden');
+        }
+        updateBackgroundEffectToggles();
+        drawImage(); // Redraw to update the checkerboard
+        });
+        bgColorInput.addEventListener('input', (event) => { editorSettings.bgColor = event.target.value; drawImage(); });
+        colorToleranceInput.addEventListener('input', (event) => { editorSettings.colorTolerance = parseInt(event.target.value); colorToleranceValueDisplay.textContent = editorSettings.colorTolerance; drawImage(); });
+
+
+        removeBackgroundCheckbox.addEventListener('change', (event) => {
+        editorSettings.removeBackground = event.target.checked;
+        if (editorSettings.removeBackground) {
+        // Disable conflicting background effects
+        grayscaleModeRadios.forEach(radio => radio.checked = (radio.value === 'none'));
+        editorSettings.grayscaleMode = 'none';
+
+        dimBackgroundCheckbox.checked = false;
+        editorSettings.dimBackground = false;
+        dimIntensityControl.classList.add('hidden');
+
+        blurBackgroundCheckbox.checked = false;
+        editorSettings.blurBackground = false;
+        blurBackgroundIntensityControl.classList.add('hidden');
+
+        // Disable color-based removal
+        removeBackgroundColorCheckbox.checked = false;
+        editorSettings.removeBackgroundColor = false;
+        backgroundColorControls.classList.add('hidden');
+        }
+        updateBackgroundEffectToggles();
+        drawImage();
+        });
+
+        grayscaleModeRadios.forEach(radio => {
+        radio.addEventListener('change', (event) => {
+        editorSettings.grayscaleMode = event.target.value;
+        if (editorSettings.grayscaleMode !== 'none') {
+        // If a grayscale mode is active, disable dimming and background blur, and remove background
+        removeBackgroundCheckbox.checked = false;
+        editorSettings.removeBackground = false;
+
+        dimBackgroundCheckbox.checked = false;
+        editorSettings.dimBackground = false;
+        dimIntensityControl.classList.add('hidden');
+
+        blurBackgroundCheckbox.checked = false;
+        editorSettings.blurBackground = false;
+        blurBackgroundIntensityControl.classList.add('hidden');
+
+        // Disable color-based removal
+        removeBackgroundColorCheckbox.checked = false;
+        editorSettings.removeBackgroundColor = false;
+        backgroundColorControls.classList.add('hidden');
+        }
+        updateBackgroundEffectToggles();
+        drawImage();
+        });
+        });
+
+        highlightSubjectTintCheckbox.addEventListener('change', (event) => {
+        editorSettings.highlightSubjectTint = event.target.checked;
+        if (editorSettings.highlightSubjectTint) {
+        tintControlsDiv.classList.remove('hidden');
+        } else {
+        tintControlsDiv.classList.add('hidden');
+        }
+        drawImage();
+        });
+        highlightIntensityInput.addEventListener('input', (event) => { editorSettings.highlightIntensity = parseFloat(event.target.value); highlightValueDisplay.textContent = editorSettings.highlightIntensity.toFixed(1); drawImage(); });
+        highlightColorInput.addEventListener('input', (event) => { editorSettings.highlightColor = event.target.value; drawImage(); });
+
+        outlineSubjectCheckbox.addEventListener('change', (event) => {
+        editorSettings.outlineSubject = event.target.checked;
+        if (editorSettings.outlineSubject) {
+        outlineControlsDiv.classList.remove('hidden');
+        } else {
+        outlineControlsDiv.classList.add('hidden');
+        }
+        drawImage();
+        });
+        outlineThicknessInput.addEventListener('input', (event) => { editorSettings.outlineThickness = parseInt(event.target.value); outlineThicknessValueDisplay.textContent = `${editorSettings.outlineThickness}px`; drawImage(); });
+        outlineColorInput.addEventListener('input', (event) => { editorSettings.outlineColor = event.target.value; drawImage(); });
+
+        dimBackgroundCheckbox.addEventListener('change', (event) => {
+        editorSettings.dimBackground = event.target.checked;
+        if (editorSettings.dimBackground) {
+        dimIntensityControl.classList.remove('hidden');
+        // If dimming is enabled, ensure grayscaleMode is 'none' and removeBackground is false
+        document.querySelector('input[name="grayscaleMode"][value="none"]').checked = true;
+        editorSettings.grayscaleMode = 'none';
+        removeBackgroundCheckbox.checked = false;
+        editorSettings.removeBackground = false;
+
+        // Disable color-based removal
+        removeBackgroundColorCheckbox.checked = false;
+        editorSettings.removeBackgroundColor = false;
+        backgroundColorControls.classList.add('hidden');
+        } else {
+        dimIntensityControl.classList.add('hidden');
+        }
+        updateBackgroundEffectToggles();
+        drawImage();
+        });
+        dimIntensityInput.addEventListener('input', (event) => { editorSettings.dimIntensity = parseFloat(event.target.value); dimValueDisplay.textContent = editorSettings.dimIntensity.toFixed(1); drawImage(); });
+
+        blurBackgroundCheckbox.addEventListener('change', (event) => {
+        editorSettings.blurBackground = event.target.checked;
+        if (editorSettings.blurBackground) {
+        blurBackgroundIntensityControl.classList.remove('hidden');
+        // If blur is enabled, ensure grayscaleMode is 'none' and removeBackground is false
+        document.querySelector('input[name="grayscaleMode"][value="none"]').checked = true;
+        editorSettings.grayscaleMode = 'none';
+        removeBackgroundCheckbox.checked = false;
+        editorSettings.removeBackground = false;
+
+        // Disable color-based removal
+        removeBackgroundColorCheckbox.checked = false;
+        editorSettings.removeBackgroundColor = false;
+        backgroundColorControls.classList.add('hidden');
+        } else {
+        blurBackgroundIntensityControl.classList.add('hidden');
+        }
+        updateBackgroundEffectToggles();
+        drawImage();
+        });
+        blurBackgroundIntensityInput.addEventListener('input', (event) => { editorSettings.blurBackgroundIntensity = parseInt(event.target.value); blurBackgroundValueDisplay.textContent = `${editorSettings.blurBackgroundIntensity}px`; drawImage(); });
+
+        // Helper to update disabled states for background effects
+        function updateBackgroundEffectToggles() {
+        const isRemoveBackgroundActive = editorSettings.removeBackground;
+        const isRemoveBackgroundColorActive = editorSettings.removeBackgroundColor;
+        const isGrayscaleBackgroundActive = editorSettings.grayscaleMode === 'bg_grayscale';
+        const isDimmingActive = editorSettings.dimBackground;
+        const isBlurActive = editorSettings.blurBackground;
+
+        // Disable/enable 'Remove Background (Human Subject)' checkbox
+        removeBackgroundCheckbox.disabled = isRemoveBackgroundColorActive || isGrayscaleBackgroundActive || isDimmingActive || isBlurActive;
+        if (removeBackgroundCheckbox.disabled) {
+        removeBackgroundOption.classList.add('opacity-50', 'pointer-events-none');
+        } else {
+        removeBackgroundOption.classList.remove('opacity-50', 'pointer-events-none');
+        }
+
+        // Disable/enable 'Remove Background by Color' checkbox and its controls
+        removeBackgroundColorCheckbox.disabled = isRemoveBackgroundActive || isGrayscaleBackgroundActive || isDimmingActive || isBlurActive;
+        if (removeBackgroundColorCheckbox.disabled) {
+        removeBackgroundColorOption.classList.add('opacity-50', 'pointer-events-none');
+        backgroundColorControls.classList.add('hidden');
+        } else {
+        removeBackgroundColorOption.classList.remove('opacity-50', 'pointer-events-none');
+        if (editorSettings.removeBackgroundColor) {
+        backgroundColorControls.classList.remove('hidden');
+        }
+        }
+
+
+        // Disable/enable grayscale background radio option
+        grayscaleModeRadios.forEach(radio => {
+        if (radio.value === 'bg_grayscale') {
+        radio.disabled = isRemoveBackgroundActive || isRemoveBackgroundColorActive || isDimmingActive || isBlurActive;
+        } else if (radio.value === 'none' || radio.value === 'subject_grayscale') {
+        radio.disabled = isRemoveBackgroundActive || isRemoveBackgroundColorActive;
+        }
+        });
+        if (isRemoveBackgroundActive || isRemoveBackgroundColorActive || isDimmingActive || isBlurActive) {
+        grayscaleModeOptions.classList.add('opacity-50', 'pointer-events-none');
+        } else {
+        grayscaleModeOptions.classList.remove('opacity-50', 'pointer-events-none');
+        }
+
+
+        // Disable/enable dimming checkbox
+        dimBackgroundCheckbox.disabled = isRemoveBackgroundActive || isRemoveBackgroundColorActive || isGrayscaleBackgroundActive;
+        if (dimBackgroundCheckbox.disabled) {
+        dimBackgroundOption.classList.add('opacity-50', 'pointer-events-none');
+        dimIntensityControl.classList.add('hidden');
+        } else {
+        dimBackgroundOption.classList.remove('opacity-50', 'pointer-events-none');
+        if (editorSettings.dimBackground) {
+        dimIntensityControl.classList.remove('hidden');
+        }
+        }
+
+        // Disable/enable blur checkbox
+        blurBackgroundCheckbox.disabled = isRemoveBackgroundActive || isRemoveBackgroundColorActive || isGrayscaleBackgroundActive;
+        if (blurBackgroundCheckbox.disabled) {
+        blurBackgroundOption.classList.add('opacity-50', 'pointer-events-none');
+        blurBackgroundIntensityControl.classList.add('hidden');
+        } else {
+        blurBackgroundOption.classList.remove('opacity-50', 'pointer-events-none');
+        if (editorSettings.blurBackground) {
+        blurBackgroundIntensityControl.classList.remove('hidden');
+        }
+        }
+        updateCanvasBackground(); // Call this when effect toggles change
+        }
+
+        // New function to update the checkerboard background
+        function updateCanvasBackground() {
+        const shouldShowCheckerboard = editorSettings.removeBackgroundColor &&
+        editorSettings.enableSegmentationEffects &&
+        !editorSettings.removeBackground &&
+        editorSettings.grayscaleMode === 'none' &&
+        !editorSettings.dimBackground &&
+        !editorSettings.blurBackground;
+
+        if (shouldShowCheckerboard) {
+        imageCanvas.classList.add('checkerboard-bg');
+        } else {
+        imageCanvas.classList.remove('checkerboard-bg');
+        }
+        }
+
+
+        // Transformations (visibility controlled by toggleTransformations)
+        cropSquareButton.addEventListener('click', () => {
+        if (!currentImage.src) { console.warn('No image loaded to crop.'); return; }
+        const size = Math.min(currentImage.naturalWidth, currentImage.naturalHeight);
+        const startX = (currentImage.naturalWidth - size) / 2;
+        const startY = (currentImage.naturalHeight - size) / 2;
+        applyDestructiveTransformation((tempCtx, tempCanvas) => {
+        tempCanvas.width = size;
+        tempCanvas.height = size;
+        tempCtx.drawImage(currentImage, startX, startY, size, size, 0, 0, size, size);
+        });
+        });
+
+        applyResizeButton.addEventListener('click', () => {
+        if (!currentImage.src) { console.warn('No image loaded to resize.'); return; }
+        let newWidth = parseInt(resizeWidthInput.value);
+        let newHeight = parseInt(resizeHeightInput.value);
+        const aspectRatio = currentImage.naturalWidth / currentImage.naturalHeight;
+
+        if (isNaN(newWidth) && isNaN(newHeight)) {
+        newWidth = currentImage.naturalWidth;
+        newHeight = currentImage.naturalHeight;
+        } else if (isNaN(newWidth)) {
+        newWidth = newHeight * aspectRatio;
+        } else if (isNaN(newHeight)) {
+        newHeight = newWidth / aspectRatio;
+        }
+        applyDestructiveTransformation((tempCtx, tempCanvas) => {
+        tempCanvas.width = newWidth;
+        tempCanvas.height = newHeight;
+        tempCtx.drawImage(currentImage, 0, 0, newWidth, newHeight);
+        });
+        });
+
+        flipHorizontalButton.addEventListener('click', () => {
+        if (!currentImage.src) { console.warn('No image loaded to flip horizontally.'); return; }
+        applyDestructiveTransformation((tempCtx, tempCanvas) => {
+        tempCanvas.width = currentImage.naturalWidth;
+        tempCanvas.height = currentImage.naturalHeight;
+        tempCtx.translate(tempCanvas.width, 0);
+        tempCtx.scale(-1, 1);
+        tempCtx.drawImage(currentImage, 0, 0, tempCanvas.width, tempCanvas.height);
+        });
+        });
+
+        flipVerticalButton.addEventListener('click', () => {
+        if (!currentImage.src) { console.warn('No image loaded to flip vertically.'); return; }
+        applyDestructiveTransformation((tempCtx, tempCanvas) => {
+        tempCanvas.width = currentImage.naturalWidth;
+        tempCanvas.height = currentImage.naturalHeight;
+        tempCtx.translate(0, tempCanvas.height);
+        tempCtx.scale(1, -1);
+        tempCtx.drawImage(currentImage, 0, 0, tempCanvas.width, tempCanvas.height);
+        });
+        });
+
+        rotate90Button.addEventListener('click', () => {
+        if (!currentImage.src) { console.warn('No image loaded to rotate.'); return; }
+        applyDestructiveTransformation((tempCtx, tempCanvas) => {
+        tempCanvas.width = currentImage.naturalHeight;
+        tempCanvas.height = currentImage.naturalWidth;
+        tempCtx.translate(tempCanvas.width, 0);
+        tempCtx.rotate(Math.PI / 2);
+        tempCtx.drawImage(currentImage, 0, 0, currentImage.naturalWidth, currentImage.naturalHeight);
+        });
+        });
+
+        // Action Buttons
+        resetButton.addEventListener('click', () => {
+        if (!originalImage.src) { console.warn('No image loaded to reset.'); return; }
+        // Show loading indicator during reset
+        loadingDiv.classList.remove('hidden');
+        loadingMessage.textContent = 'Resetting Image...';
+        loadingDetail.textContent = 'Restoring original image and settings.';
+        loadingDiv.classList.remove('bg-red-700', 'border-red-500', 'text-red-100');
+        loadingDiv.classList.add('bg-indigo-700', 'border-indigo-500', 'text-indigo-100');
+
+        resetEditorControls();
+        currentImage.onload = async () => {
+        imageCanvas.width = currentImage.naturalWidth;
+        imageCanvas.height = currentImage.naturalHeight;
+        if (segmentation) {
+        loadingMessage.textContent = 'Processing image with AI...';
+        loadingDetail.textContent = 'Applying segmentation effects.';
+        await segmentation.send({image: originalImage});
+        }
+        drawImage();
+        loadingDiv.classList.add('hidden'); // Hide loading after drawImage
+        };
+        currentImage.src = originalImage.src;
+        });
+
+        // Download functionality with format selection
+        downloadButton.addEventListener('click', () => {
+        if (currentImage.src) {
+        // Show loading indicator during download prep (if it takes time)
+        loadingDiv.classList.remove('hidden');
+        loadingMessage.textContent = 'Preparing Download...';
+        loadingDetail.textContent = 'This may take a moment for large images.';
+        loadingDiv.classList.remove('bg-red-700', 'border-red-500', 'text-red-100');
+        loadingDiv.classList.add('bg-indigo-700', 'border-indigo-500', 'text-indigo-100');
+
+
+        const link = document.createElement('a');
+        const selectedFormat = downloadFormat.value;
+        let fileName = 'edited-image';
+        let mimeType = selectedFormat;
+
+        // Note: toDataURL for BMP and TIFF might not be universally supported
+        // or might result in large file sizes. PNG, JPEG, WebP are most reliable.
+        switch (selectedFormat) {
+        case 'image/jpeg':
+        fileName += '.jpeg';
+        break;
+        case 'image/webp':
+        fileName += '.webp';
+        break;
+        case 'image/bmp':
+        fileName += '.bmp';
+        break;
+        case 'image/tiff': // TIFF is not directly supported by toDataURL. Will fallback to PNG.
+        mimeType = 'image/png'; // Fallback for TIFF
+        fileName += '.png';
+        console.warn("TIFF format not natively supported by toDataURL. Downloading as PNG instead.");
+        break;
+        case 'image/png':
+        default:
+        fileName += '.png';
+        break;
+        }
+
+        link.download = fileName;
+        link.href = imageCanvas.toDataURL(mimeType, 0.9); // 0.9 quality for JPEG/WebP
+        link.click();
+        loadingDiv.classList.add('hidden'); // Hide loading after download is triggered
+        } else {
+        console.warn('No image available to download.');
+        }
+        });
+
+        // --- Info Modal Event Listeners ---
+        infoButton.addEventListener('click', () => {
+        infoModal.classList.remove('hidden');
+        });
+
+        closeInfoModal.addEventListener('click', () => {
+        infoModal.classList.add('hidden');
+        });
+
+        // Close modal if user clicks outside of it
+        infoModal.addEventListener('click', (event) => {
+        if (event.target === infoModal) {
+        infoModal.classList.add('hidden');
+        }
+        });
+
+        // --- Helper Function to Reset All Controls and Settings ---
+        function resetEditorControls() {
+        editorSettings = {
+        enableGlobalAdjustments: false,
+        enableGlobalFilters: false,
+        enableSegmentationEffects: false,
+        enableTransformations: false,
+        enableResize: false,
+        brightness: 100, contrast: 100, saturation: 100, hue: 0, globalBlur: 0,
+        globalGrayscale: false, globalInvert: false,
+        globalSepia: false,
+        globalGlow: false,
+        globalOpacity: 100,
+        enableColorOverlay: false,
+        overlayColor: '#000000',
+        overlayIntensity: 0.0,
+        removeBackgroundColor: false,
+        bgColor: '#FFFFFF',
+        colorTolerance: 50,
+        removeBackground: false,
+        grayscaleMode: 'none',
+        highlightSubjectTint: false, highlightIntensity: 0.5, highlightColor: '#4F46E5',
+        outlineSubject: false, outlineThickness: 3, outlineColor: '#FFFFFF',
+        dimBackground: false, dimIntensity: 0.5,
+        blurBackground: false, blurBackgroundIntensity: 5
+        };
+
+        // Reset UI elements to match settings
+        toggleGlobalAdjustments.checked = false;
+        globalAdjustmentsControls.classList.add('hidden');
+        toggleGlobalFilters.checked = false;
+        globalFiltersControls.classList.add('hidden');
+        toggleSegmentationEffects.checked = false;
+        segmentationEffectsControls.classList.add('hidden');
+        toggleTransformations.checked = false;
+        transformationsControls.classList.add('hidden');
+        toggleResize.checked = false;
+        resizeControls.classList.add('hidden');
+
+
+        brightnessInput.value = 100; brightnessValueDisplay.textContent = '100%';
+        contrastInput.value = 100; contrastValueDisplay.textContent = '100%';
+        saturationInput.value = 100; saturationValueDisplay.textContent = '100%';
+        hueInput.value = 0; hueValueDisplay.textContent = '0°';
+        globalBlurInput.value = 0; globalBlurValueDisplay.textContent = '0px';
+
+        grayscaleButton.classList.remove('active');
+        invertButton.classList.remove('active');
+        sepiaButton.classList.remove('active');
+        glowButton.classList.remove('active');
+        opacityInput.value = 100;
+        opacityValueDisplay.textContent = '100%';
+
+        // Reset new Color Overlay controls
+        enableColorOverlayCheckbox.checked = false;
+        colorOverlayControls.classList.add('hidden');
+        overlayColorInput.value = '#000000';
+        overlayIntensityInput.value = 0.0;
+        overlayIntensityValueDisplay.textContent = '0.00';
+
+        removeBackgroundColorCheckbox.checked = false;
+        backgroundColorControls.classList.add('hidden');
+        bgColorInput.value = '#FFFFFF';
+        colorToleranceInput.value = 50;
+        colorToleranceValueDisplay.textContent = 50;
+
+        removeBackgroundCheckbox.checked = false;
+
+        grayscaleModeRadios.forEach(radio => {
+        if (radio.value === 'none') radio.checked = true;
+        else radio.checked = false;
+        });
+
+        highlightSubjectTintCheckbox.checked = false; tintControlsDiv.classList.add('hidden');
+        highlightIntensityInput.value = 0.5; highlightValueDisplay.textContent = '0.5';
+        highlightColorInput.value = '#4F46E5';
+
+        outlineSubjectCheckbox.checked = false; outlineControlsDiv.classList.add('hidden');
+        outlineThicknessInput.value = 3; outlineThicknessValueDisplay.textContent = '3px';
+        outlineColorInput.value = '#FFFFFF';
+
+        dimBackgroundCheckbox.checked = false; dimIntensityControl.classList.add('hidden');
+        dimIntensityInput.value = 0.5; dimValueDisplay.textContent = '0.5';
+
+        blurBackgroundCheckbox.checked = false; blurBackgroundIntensityControl.classList.add('hidden');
+        blurBackgroundIntensityInput.value = 5; blurBackgroundValueDisplay.textContent = '5px';
+
+        resizeWidthInput.value = ''; resizeHeightInput.value = '';
+
+        // No 'active' class for transformation buttons, so no need to remove it
+        // cropSquareButton.classList.remove('active');
+        // flipHorizontalButton.classList.remove('active');
+        // flipVerticalButton.classList.remove('active');
+        // rotate90Button.classList.remove('active');
+
+        downloadFormat.value = 'image/png';
+
+        updateBackgroundEffectToggles();
+        }
+
+        function clearCanvas() {
+        ctx.clearRect(0, 0, imageCanvas.width, imageCanvas.height);
+        imageCanvas.width = 0;
+        imageCanvas.height = 0;
+        currentSegmentationMask = null;
+        updateCanvasBackground(); // Update background when canvas is cleared
+        }
+
+        // Initial setup on page load
+        window.onload = () => {
+        // Add a small delay to ensure the external MediaPipe script has fully loaded and defined its globals
+        setTimeout(() => {
+        loadSegmentationModel();
+        }, 500); // 500ms delay, can be adjusted
+        // Hide loading indicator if no image is loaded initially
+        if (!originalImage.src) {
+        loadingDiv.classList.add('hidden');
+        }
+        };
+    </script>
+</body>
+</html>

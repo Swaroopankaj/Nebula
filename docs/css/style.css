@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nebula: An Image Editor</title>
+    <!-- Favicon (Emoji SVG) -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✨</text></svg>">
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font and Great Vibes for Calligraphy -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Great+Vibes&display=swap" rel="stylesheet">
+    <!-- Link to external stylesheet -->
+    <link rel="stylesheet" href="css/style.css">
+    <!-- MediaPipe Selfie Segmentation Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation@0.1.1632777977/selfie_segmentation.global.js"></script>
+</head>
+<body class="bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center p-4 text-gray-100">
+    <!-- Main Application Container -->
+    <div id="app-container" class="relative bg-gray-700 bg-opacity-90 rounded-xl shadow-2xl overflow-hidden flex flex-col w-full h-full">
+
+        <!-- Header Strip -->
+        <div id="header-strip" class="w-full py-4 bg-indigo-900 bg-opacity-20 rounded-t-xl flex items-center justify-center z-10">
+            <h1 class="text-3xl font-bold font-great-vibes text-white tracking-wide">Nebula : A creativity tool</h1>
+        </div>
+
+        <!-- Main Content Area (Image Display + Controls) -->
+        <div class="flex-1 flex flex-col md:flex-row items-center justify-center p-4 gap-4 w-full h-full">
+
+            <!-- Left Panel: Image Display Area -->
+            <div class="relative w-full md:w-3/4 h-2/3 md:h-full flex items-center justify-center bg-gray-800 rounded-lg overflow-hidden shadow-xl">
+                <canvas id="imageCanvas" class="bg-gray-800"></canvas>
+                <p id="placeholderText" class="text-gray-200 text-center absolute z-0 text-2xl">Upload an image to start editing</p>
+
+                <!-- Loading Indicator for MediaPipe or other heavy operations -->
+                <div id="loading" class="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-70 text-white p-4 rounded-xl hidden z-40">
+                    <div class="bg-indigo-700 border-l-4 border-indigo-500 text-indigo-100 p-4 rounded-md shadow-sm" role="alert">
+                        <p class="font-bold" id="loadingMessage">Loading Segmentation Model...</p>
+                        <p id="loadingDetail">Please wait, this may take a moment.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Controls and Settings -->
+            <div id="controls-panel" class="w-full md:w-1/4 h-1/3 md:h-full bg-gray-600 bg-opacity-30 backdrop-blur-sm rounded-lg shadow-lg p-4 flex flex-col space-y-4 custom-scrollbar overflow-y-auto flex-shrink-0">
+                <!-- Upload Image -->
+                <div>
+                    <label for="imageUpload" class="block text-sm font-medium text-gray-200 mb-1">Upload Image:</label>
+                    <input type="file" id="imageUpload" accept="image/*" class="w-full text-gray-200 bg-gray-700 bg-opacity-20 backdrop-blur-sm border border-gray-500 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-400 focus:border-indigo-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-purple-700 file:text-white hover:file:bg-purple-600">
+                </div>
+
+                <!-- Global Adjustments Section Toggle -->
+                <div class="space-y-3">
+                    <h3 class="text-base font-semibold text-gray-100 pt-2 border-t border-gray-500">
+                        <label class="inline-flex items-center text-gray-100 cursor-pointer">
+                            <input type="checkbox" id="toggleGlobalAdjustments" class="form-checkbox text-purple-400 rounded">
+                            <span class="ml-2">Global Adjustments</span>
+                        </label>
+                    </h3>
+                    <div id="globalAdjustmentsControls" class="hidden space-y-3">
+                        <!-- Brightness Slider -->
+                        <div>
+                            <label for="brightness" class="block text-sm font-medium text-gray-200 mb-1">
+                                Brightness: <span id="brightnessValue" class="font-bold text-purple-400">100%</span>
+                            </label>
+                            <input type="range" id="brightness" min="0" max="200" step="1" value="100"
+                                   class="w-full h-2 bg-gray-500 rounded-lg appearance-none cursor-pointer range-lg">
+                        </div>
+
+                        <!-- Contrast Slider -->
+                        <div>
+                            <label for="contrast" class="block text-sm font-medium text-gray-200 mb-1">
+                                Contrast: <span id="contrastValue" class="font-bold text-purple-400">100%</span>
+                            </label>
+                            <input type="range" id="contrast" min="0" max="200" step="1" value="100"
+                                   class="w-full h-2 bg-gray-500 rounded-lg appearance-none cursor-pointer range-lg">
+                        </div>
+
+                        <!-- Saturation Slider -->
+                        <div>
+                            <label for="saturation" class="block text-sm font-medium text-gray-200 mb-1">
+                                Saturation: <span id="saturationValue" class="font-bold text-purple-400">100%</span>
+                            </label>
+                            <input type="range" id="saturation" min="0" max="200" step="1" value="100"
+                                   class="w-full h-2 bg-gray-500 rounded-lg appearance-none cursor-pointer range-lg">
+                        </div>
+
+                        <!-- Hue Rotation Slider -->
+                        <div>
+                            <label for="hue" class="block text-sm font-medium text-gray-200 mb-1">
+                                Hue: <span id="hueValue" class="font-bold text-purple-400">0°</span>
+                            </label>
+                            <input type="range" id="hue" min="0" max="360" step="1" value="0"
+                                   class="w-full h-2 bg-gray-500 rounded-lg appearance-none cursor-pointer range-lg">
+                        </div>
+
+                        <!-- Global Blur Slider -->
+                        <div>
+                            <label for="globalBlur" class="block text-sm font-medium text-gray-200 mb-1">
+                                Global Blur: <span id="globalBlurValue" class="font-bold text-purple-400">0px</span>
+                            </label>
+                            <input type="range" id="globalBlur" min="0" max="20" step="0.1" value="0"
+                                   class="w-full h-2 bg-gray-500 rounded-lg appearance-none cursor-pointer range-lg">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Global Filters Section Toggle -->
+                <div class="space-y-3">
+                    <h3 class="text-base font-semibold text-gray-100 pt-2 border-t border-gray-500">
+                        <label class="inline-flex items-center text-gray-100 cursor-pointer">
+                            <input type="checkbox" id="toggleGlobalFilters" class="form-checkbox text-purple-400 rounded">
+                            <span class="ml-2">Global Filters</span>
+                        </label>
+                    </h3>
+                    <div id="globalFiltersControls" class="hidden space-y-3">
+                        <div class="grid grid-cols-2 gap-2">
+                            <button id="grayscaleButton" class="bg-purple-700 bg-opacity-30 backdrop-blur-sm text-purple-100 font-semibold py-2 px-4 rounded-md shadow-md transition-all duration-300 hover:bg-opacity-40 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2">
+                                Grayscale
+                            </button>
+                            <button id="invertButton" class="bg-purple-700 bg-opacity-30 backdrop-blur-sm text-purple-100 font-semibold py-2 px-4 rounded-md shadow-md transition-all duration-300 hover:bg-opacity-40 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2">
+                                Invert Colors
+                            </button>
+                            <button id="sepiaButton" class="bg-purple-700 bg-opacity-30 backdrop-blur-sm text-purple-100 font-semibold py-2 px-4 rounded-md shadow-md transition-all duration-300 hover:bg-opacity-40 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2">
+                                Sepia
+                            </button>
+                            <button id="glowButton" class="bg-purple-700 bg-opacity-30 backdrop-blur-sm text-purple-100 font-semibold py-2 px-4 rounded-md shadow-md transition-all duration-300 hover:bg-opacity-40 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2">
+                                Glow
+                            </button>
+                        </div>
+                        <!-- Opacity Slider -->
+                        <div>
+                            <label for="opacity" class="block text-sm font-medium text-gray-200 mb-1">
+                                Opacity: <span id="opacityValue" class="font-bold text-purple-400">100%</span>
+                            </label>
+                            <input type="range" id="opacity" min="0" max="100" step="1" value="100"
+                                   class="w-full h-2 bg-gray-500 rounded-lg appearance-none cursor-pointer range-lg">
+                        </div>
+                        
+                        <!-- Color Overlay Section -->
+                        <div class="space-y-2 pt-2 border-t border-gray-500">
+                            <label class="inline-flex items-center text-gray-200">
+                                <input type="checkbox" id="enableColorOverlay" class="form-checkbox text-purple-400 rounded">
+                                <span class="ml-2">Enable Color Overlay</span>
+                            </label>
+                            <div id="colorOverlayControls" class="hidden pl-6 space-y-2">
+                                <div>
+                                    <label for="overlayColor" class="block text-sm font-medium text-gray-200 mb-1">Overlay Color:</label>
+                                    <input type="color" id="overlayColor" value="#000000"
+                                           class="w-full h-10 border border-gray-500 rounded-md shadow-sm">
+                                </div>
+                                <div>
+                                    <label for="overlayIntensity" class="block text-sm font-medium text-gray-200 mb-1">
+                                        Intensity: <span id="overlayIntensityValue" class="font-bold text-purple-400">0.0</span>
+                                    </label>
+                                    <input type="range" id="overlayIntensity" min="0" max="1" step="0.05" value="0"
+                                           class="w-full h-2 bg-gray-500 rounded-lg appearance-none cursor-pointer range-lg">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subject/Background Segmentation Effects Toggle -->
+                <div class="space-y-3">
+                    <h3 class="text-base font-semibold text-gray-100 pt-2 border-t border-gray-500">
+                        <label class="inline-flex items-center text-gray-100 cursor-pointer">
+                            <input type="checkbox" id="toggleSegmentationEffects" class="form-checkbox text-indigo-400 rounded">
+                            <span class="ml-2">Subject/Background Effects</span>
+                        </label>
+                    </h3>
+                    <div id="segmentationEffectsControls" class="hidden space-y-3">
+                        <p class="text-sm text-gray-300 mb-2">Note: MediaPipe segmentation (below) is primarily for human subjects.</p>
+                        
+                        <!-- Remove Background by Color -->
+                        <div class="space-y-2" id="removeBackgroundColorOption">
+                            <label class="inline-flex items-center text-gray-200">
+                                <input type="checkbox" id="removeBackgroundColorCheckbox" class="form-checkbox text-indigo-400 rounded">
+                                <span class="ml-2">Remove Background by Color</span>
+                            </label>
+                            <div id="backgroundColorControls" class="hidden pl-6 space-y-2">
+                                <div>
+                                    <label for="bgColor" class="block text-sm font-medium text-gray-200 mb-1">Target Color:</label>
+                                    <input type="color" id="bgColor" value="#FFFFFF"
+                                           class="w-full h-10 border border-gray-500 rounded-md shadow-sm">
+                                </div>
+                                <div>
+                                    <label for="colorTolerance" class="block text-sm font-medium text-gray-200 mb-1">
+                                        Tolerance: <span id="colorToleranceValue" class="font-bold text-indigo-400">50</span>
+                                    </label>
+                                    <input type="range" id="colorTolerance" min="0" max="255" step="1" value="50"
+                                           class="w-full h-2 bg-gray-500 rounded-lg appearance-none cursor-pointer range-lg">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Remove Background (MediaPipe) -->
+                        <div class="space-y-2" id="removeBackgroundOption">
+                            <label class="inline-flex items-center text-gray-200">
+                                <input type="checkbox" id="removeBackgroundCheckbox" class="form-checkbox text-indigo-400 rounded">
+                                <span class="ml-2">Remove Background (Human Subject)</span>
+                            </label>
+                        </div>
+
+                        <!-- Grayscale Options for segmentation -->
+                        <div class="space-y-2" id="grayscaleModeOptions">
+                            <label class="inline-flex items-center text-gray-200">
+                                <input type="radio" name="grayscaleMode" value="none" class="form-radio text-indigo-400" checked>
+                                <span class="ml-2">Normal Colors</span>
+                            </label>
+                            <label class="inline-flex items-center text-gray-200">
+                                <input type="radio" name="grayscaleMode" value="bg_grayscale" class="form-radio text-indigo-400">
+                                <span class="ml-2">Grayscale Background</span>
+                            </label>
+                            <label class="inline-flex items-center text-gray-200">
+                                <input type="radio" name="grayscaleMode" value="subject_grayscale" class="form-radio text-indigo-400">
+                                <span class="ml-2">Grayscale Subject</span>
+                            </label>
+                        </div>
+
+                        <!-- Subject Highlight Tint Section -->
+                        <div class="space-y-2">
+                            <label class="inline-flex items-center text-gray-200">
+                                <input type="checkbox" id="highlightSubjectTint" class="form-checkbox text-indigo-400 rounded">
+                                <span class="ml-2">Enable Tint</span>
+                            </label>
+                            <div id="tintControls" class="hidden">
+                                <div>
+                                    <label for="highlightIntensity" class="block text-sm font-medium text-gray-200 mb-1">
+                                        Tint Intensity: <span id="highlightValue" class="font-bold text-indigo-400">0.5</span>
+                                    </label>
+                                    <input type="range" id="highlightIntensity" min="0" max="1" step="0.1" value="0.5"
+                                           class="w-full h-2 bg-gray-500 rounded-lg appearance-none cursor-pointer range-lg">
+                                </div>
+                                <div>
+                                    <label for="highlightColor" class="block text-sm font-medium text-gray-200 mb-1">
+                                        Tint Color:
+                                    </label>
+                                    <input type="color" id="highlightColor" value="#4F46E5"
+                                           class="w-full h-10 border border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-indigo-400 focus:border-indigo-400">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Subject Outline Section -->
+                        <div class="space-y-2">
+                            <label class="inline-flex items-center text-gray-200">
+                                <input type="checkbox" id="outlineSubject" class="form-checkbox text-indigo-400 rounded">
+                                <span class="ml-2">Enable Outline (Solid)</span>
+                            </label>
+                            <div id="outlineControls" class="hidden">
+                                <div>
+                                    <label for="outlineThickness" class="block text-sm font-medium text-gray-200 mb-1">
+                                        Outline Thickness: <span id="outlineThicknessValue" class="font-bold text-indigo-400">3px</span>
+                                    </label>
+                                    <input type="range" id="outlineThickness" min="1" max="10" step="1" value="3"
+                                           class="w-full h-2 bg-gray-500 rounded-lg appearance-none cursor-pointer range-lg">
+                                </div>
+                                <div>
+                                    <label for="outlineColor" class="block text-sm font-medium text-gray-200 mb-1">
+                                        Outline Color:
+                                    </label>
+                                    <input type="color" id="outlineColor" value="#FFFFFF"
+                                           class="w-full h-10 border border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-indigo-400 focus:focus:border-indigo-400">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Background Dimming Toggle -->
+                        <div class="space-y-2" id="dimBackgroundOption">
+                            <label class="inline-flex items-center text-gray-200">
+                                <input type="checkbox" id="dimBackground" class="form-checkbox text-indigo-400 rounded">
+                                <span class="ml-2">Dim Background</span>
+                            </label>
+                            <div id="dimIntensityControl" class="hidden">
+                                <label for="dimIntensity" class="block text-sm font-medium text-gray-200 mb-1">
+                                    Dimming Intensity: <span id="dimValue" class="font-bold text-indigo-400">0.5</span>
+                                </label>
+                                <input type="range" id="dimIntensity" min="0" max="1" step="0.1" value="0.5"
+                                       class="w-full h-2 bg-gray-500 rounded-lg appearance-none cursor-pointer range-lg">
+                                </div>
+                        </div>
+
+                        <!-- Background Blur Toggle -->
+                        <div class="space-y-2" id="blurBackgroundOption">
+                            <label class="inline-flex items-center text-gray-200">
+                                <input type="checkbox" id="blurBackgroundCheckbox" class="form-checkbox text-indigo-400 rounded">
+                                <span class="ml-2">Blur Background</span>
+                            </label>
+                            <div id="blurBackgroundIntensityControl" class="hidden">
+                                <label for="blurBackgroundIntensity" class="block text-sm font-medium text-gray-200 mb-1">
+                                    Blur Intensity: <span id="blurBackgroundValue" class="font-bold text-indigo-400">5px</span>
+                                </label>
+                                <input type="range" id="blurBackgroundIntensity" min="0" max="20" step="1" value="5"
+                                       class="w-full h-2 bg-gray-500 rounded-lg appearance-none cursor-pointer range-lg">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transformations Section Toggle -->
+                <div class="space-y-3">
+                    <h3 class="text-base font-semibold text-gray-100 pt-2 border-t border-gray-500">
+                        <label class="inline-flex items-center text-gray-100 cursor-pointer">
+                            <input type="checkbox" id="toggleTransformations" class="form-checkbox text-blue-400 rounded">
+                            <span class="ml-2">Transformations</span>
+                        </label>
+                    </h3>
+                    <div id="transformationsControls" class="hidden grid grid-cols-2 gap-2">
+                        <button id="flipHorizontalButton" class="bg-blue-700 bg-opacity-30 backdrop-blur-sm text-blue-100 font-semibold py-2 px-4 rounded-md shadow-md transition-all duration-300 hover:bg-opacity-40 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2">
+                            Flip Horizontal
+                        </button>
+                        <button id="flipVerticalButton" class="bg-blue-700 bg-opacity-30 backdrop-blur-sm text-blue-100 font-semibold py-2 px-4 rounded-md shadow-md transition-all duration-300 hover:bg-opacity-40 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2">
+                            Flip Vertical
+                        </button>
+                        <button id="rotate90Button" class="bg-blue-700 bg-opacity-30 backdrop-blur-sm text-blue-100 font-semibold py-2 px-4 rounded-md shadow-md transition-all duration-300 hover:bg-opacity-40 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 col-span-2">
+                            Rotate 90° CW
+                        </button>
+                        <button id="cropSquareButton" class="bg-blue-700 bg-opacity-30 backdrop-blur-sm text-blue-100 font-semibold py-2 px-4 rounded-md shadow-md transition-all duration-300 hover:bg-opacity-40 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 col-span-2">
+                            Crop to Center Square
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Resizing Inputs Section Toggle -->
+                <div class="space-y-3">
+                    <h3 class="text-base font-semibold text-gray-100 pt-2 border-t border-gray-500">
+                        <label class="inline-flex items-center text-gray-100 cursor-pointer">
+                            <input type="checkbox" id="toggleResize" class="form-checkbox text-purple-400 rounded">
+                            <span class="ml-2">Resize</span>
+                        </label>
+                    </h3>
+                    <div id="resizeControls" class="hidden flex items-center space-x-2">
+                        <div class="flex-1">
+                            <label for="resizeWidth" class="block text-sm font-medium text-gray-200 mb-1">Width:</label>
+                            <input type="number" id="resizeWidth" placeholder="Auto"
+                                   class="w-full text-gray-200 bg-gray-700 bg-opacity-20 backdrop-blur-sm border border-gray-500 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-purple-400 focus:border-purple-400">
+                        </div>
+                        <div class="flex-1">
+                            <label for="resizeHeight" class="block text-sm font-medium text-gray-200 mb-1">Height:</label>
+                            <input type="number" id="resizeHeight" placeholder="Auto"
+                                   class="w-full text-gray-200 bg-gray-700 bg-opacity-20 backdrop-blur-sm border border-gray-500 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-purple-400 focus:border-purple-400">
+                        </div>
+                        <button id="applyResizeButton" class="mt-5 bg-purple-700 bg-opacity-30 backdrop-blur-sm text-purple-100 font-semibold py-2 px-4 rounded-md shadow-md transition-all duration-300 hover:bg-opacity-40 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2">
+                            Apply
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-col space-y-2 mt-auto pt-2 border-t border-gray-500">
+                    <button id="resetButton" class="bg-gray-600 bg-opacity-30 backdrop-blur-sm text-gray-100 font-semibold py-2 px-4 rounded-md shadow-md transition-all duration-300 hover:bg-opacity-40 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2">
+                        Reset All
+                    </button>
+                    <div class="flex items-center space-x-2">
+                        <select id="downloadFormat" class="flex-1 text-gray-200 bg-gray-700 bg-opacity-20 backdrop-blur-sm border border-gray-500 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-green-400 focus:border-green-400">
+                            <option value="image/png">PNG</option>
+                            <option value="image/jpeg">JPEG</option>
+                            <option value="image/webp">WebP</option>
+                            <option value="image/bmp">BMP</option>
+                            <option value="image/tiff">TIFF</option>
+                        </select>
+                        <button id="downloadButton" class="bg-green-700 bg-opacity-30 backdrop-blur-sm text-green-100 font-semibold py-2 px-4 rounded-md shadow-md transition-all duration-300 hover:bg-opacity-40 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2">
+                            Download
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dark/Light Mode Toggle -->
+        <button id="darkModeToggle" class="absolute top-4 right-4 p-3 bg-gray-700 bg-opacity-50 rounded-full shadow-lg hover:bg-opacity-70 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 z-50">
+            <!-- Sun icon for Light Mode -->
+            <svg id="sunIcon" class="w-6 h-6 text-gray-100" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2.25a.75.75 0 00-.75.75v3a.75.75 0 001.5 0v-3a.75.75 0 00-.75-.75zM12 18.75a.75.75 0 00-.75.75v3a.75.75 0 001.5 0v-3a.75.75 0 00-.75-.75zM19.794 8.206a.75.75 0 00-1.06-1.06l-2.121 2.122a.75.75 0 001.06 1.06l2.121-2.122zM4.206 15.794a.75.75 0 00-1.06 1.06l2.122 2.121a.75.75 0 001.06-1.06l-2.122-2.121zM2.25 12a.75.75 0 00-.75.75h-3a.75.75 0 000-1.5h3a.75.75 0 00.75.75zM21.75 12a.75.75 0 00-.75.75h-3a.75.75 0 000-1.5h3a.75.75 0 00.75.75zM4.206 8.206a.75.75 0 011.06-1.06l2.121 2.122a.75.75 0 01-1.06 1.06L4.206 8.206zM15.794 19.794a.75.75 0 011.06-1.06l2.121 2.122a.75.75 0 01-1.06 1.06l-2.121-2.122zM12 16.5A4.5 4.5 0 1012 7.5a4.5 4.5 0 000 9z"/>
+            </svg>
+            <!-- Moon icon for Dark Mode -->
+            <svg id="moonIcon" class="w-6 h-6 text-gray-100 hidden" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 3a9 9 0 00-9 9c0 4.97 4.03 9 9 9a9 9 0 009-9c0-.46-.03-.92-.08-1.37A6.97 6.97 0 0112 3zm0 2c-3.86 0-7 3.14-7 7s3.14 7 7 7a7 7 0 006.33-3.88c-.52-.39-1.01-.83-1.47-1.3a5.97 5.97 0 01-8.38-8.38A7 7 0 0012 5z"/>
+            </svg>
+        </button>
+
+        <!-- Info Button (Simple Info Icon) -->
+        <button id="infoButton" class="absolute bottom-4 right-4 p-3 bg-gray-700 bg-opacity-50 rounded-full shadow-lg hover:bg-opacity-70 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 z-50">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-info">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 16v-4"/>
+                <path d="M12 8h.01"/>
+            </svg>
+        </button>
+    </div>
+
+    <!-- Modals (Place at the end of body for layering) -->
+    <div id="modal-backdrop" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div id="infoModal" class="bg-gray-800 rounded-lg p-6 shadow-xl w-11/12 md:w-1/2 lg:w-1/3 text-gray-100 hidden">
+            <h2 class="text-xl font-bold mb-4">About Nebula</h2>
+            <p class="mb-4">Nebula is an interactive image editor designed to provide a range of powerful yet easy-to-use photo manipulation features directly in your browser. From basic adjustments to advanced segmentation effects, unleash your creativity!</p>
+            <h3 class="font-semibold mb-2">Features:</h3>
+            <ul class="list-disc list-inside mb-4 text-sm">
+                <li>Global Adjustments: Brightness, Contrast, Saturation, Hue, Global Blur.</li>
+                <li>Global Filters: Grayscale, Invert, Sepia, Glow, Opacity, Color Overlay.</li>
+                <li>Subject/Background Segmentation: Remove background by color, MediaPipe human subject segmentation, Grayscale modes for subject/background, Subject tint and outline, Background dimming and blurring.</li>
+                <li>Transformations: Flip (Horizontal/Vertical), Rotate 90° CW, Crop to Center Square.</li>
+                <li>Image Resizing: Custom width/height input for precise control.</li>
+                <li>Download Options: Save edited images in various formats (PNG, JPEG, WebP, BMP, TIFF).</li>
+                <li>Dark/Light Mode: Toggle between themes for comfortable viewing.</li>
+            </ul>
+            <h3 class="font-semibold mb-2">How to Use:</h3>
+            <ol class="list-decimal list-inside mb-4 text-sm">
+                <li><strong>Upload Image:</strong> Click the "Upload Image" button and select an image from your device.</li>
+                <li><strong>Adjust Settings:</strong> Use the sliders and checkboxes in the right panel to apply various effects and transformations.</li>
+                <li><strong>Segmentation:</strong> For human subject background removal or effects, ensure "Remove Background (Human Subject)" is checked.</li>
+                <li><strong>Download:</strong> Select your desired format and click "Download" to save your masterpiece!</li>
+            </ol>
+            <div class="flex justify-end">
+                <button id="closeInfoModal" class="bg-indigo-700 text-white font-semibold py-2 px-4 rounded-md shadow-md transition-all duration-300 hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2">
+                    Got It!
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Link to Main JavaScript module -->
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
